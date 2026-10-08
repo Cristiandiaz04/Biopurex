@@ -34,7 +34,7 @@ export function EditorLineas({
   return (
     <div className="overflow-hidden rounded-md bg-white shadow-[inset_0_0_0_1px_var(--border)]">
       <div className="border-b border-line px-4 py-3">
-        <h2 className="m-0 text-base font-bold">{modo === "costo" ? "Líneas por variante" : "Productos"}</h2>
+        <h2 className="m-0 text-base font-bold">{modo === "costo" ? "Qué compraste" : "Productos"}</h2>
       </div>
       {lineas.map((l, i) => {
         const o = porId.get(l.varianteId);
@@ -43,7 +43,7 @@ export function EditorLineas({
         return (
           <div key={l.clave} className="grid grid-cols-1 items-end gap-2.5 border-b border-line px-4 py-3 min-[900px]:grid-cols-[minmax(0,1fr)_110px_140px_120px_40px]">
             <label className="flex min-w-0 flex-col gap-1.5 text-xs font-semibold text-text-2">
-              Variante {lineas.length > 1 && i + 1}
+              {modo === "costo" ? "Artículo" : "Variante"} {lineas.length > 1 && i + 1}
               <span className="relative flex items-center">
                 <span
                   className="pointer-events-none absolute left-3 size-3.5 rounded-full"
@@ -57,14 +57,14 @@ export function EditorLineas({
                   }}
                   className={`${entradaAdmin} cursor-pointer pl-8`}
                 >
-                  <option value="">Elige un producto…</option>
+                  <option value="">{modo === "costo" ? "Elige materia prima o producto…" : "Elige un producto…"}</option>
                   {grupos.map((g) => (
                     <optgroup key={g} label={g}>
                       {opciones
                         .filter((x) => x.producto === g)
                         .map((x) => (
                           <option key={x.id} value={x.id}>
-                            {x.etiqueta === g ? g : `${g} · ${x.etiqueta}`}
+                            {x.unidad ? `${x.etiqueta} (${x.unidad})` : x.etiqueta === g.replace(/^Reventa · /, "") ? g.replace(/^Reventa · /, "") : `${g.replace(/^Reventa · /, "")} · ${x.etiqueta}`}
                           </option>
                         ))}
                     </optgroup>
@@ -73,18 +73,18 @@ export function EditorLineas({
               </span>
               {o && (
                 <span className={`font-medium ${modo === "precio" && o.disponible < cant ? "text-error" : ""}`}>
-                  {o.sku} · stock {o.stock}, disponible {o.disponible}
+                  {o.sku} · {o.unidad ? `hay ${o.stock.toLocaleString("en-US", { maximumFractionDigits: 3 })} ${o.unidad}` : `stock ${o.stock}, disponible ${o.disponible}`}
                   {modo === "precio" && o.disponible < cant && " — no alcanza"}
                 </span>
               )}
             </label>
             <label className="flex flex-col gap-1.5 text-xs font-semibold text-text-2">
-              Cantidad
-              <input value={l.cantidad} onChange={(e) => cambiar(l.clave, { cantidad: e.target.value })} inputMode="numeric" className={`${entradaAdmin} text-right tabular-nums`} />
+              Cantidad{o?.unidad ? ` (${o.unidad})` : ""}
+              <input value={l.cantidad} onChange={(e) => cambiar(l.clave, { cantidad: e.target.value })} inputMode={o?.unidad ? "decimal" : "numeric"} className={`${entradaAdmin} text-right tabular-nums`} />
             </label>
             {modo === "costo" ? (
               <label className="flex flex-col gap-1.5 text-xs font-semibold text-text-2">
-                Costo unitario (L.)
+                Costo {o?.unidad ? `por ${o.unidad}` : "unitario"} (L.)
                 <input value={l.valor} onChange={(e) => cambiar(l.clave, { valor: e.target.value })} inputMode="decimal" placeholder="0.00" className={`${entradaAdmin} text-right tabular-nums`} />
               </label>
             ) : (

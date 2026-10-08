@@ -1,14 +1,15 @@
 import { Suspense } from "react";
 import { FormularioCompra } from "@/components/admin/formulario-compra";
 import { TituloPagina } from "@/components/admin/ui";
-import { listarProveedores, opcionesVariantes } from "@/lib/datos/admin-docs";
+import { listarProveedores, opcionesCompra } from "@/lib/datos/admin-docs";
 
 export const metadata = { title: "Nueva compra" };
 
 async function Nueva({ searchParams }: { searchParams: PageProps<"/admin/compras/nueva">["searchParams"] }) {
-  const [sp, proveedores, opciones] = await Promise.all([searchParams, listarProveedores(), opcionesVariantes()]);
+  const [sp, proveedores, opciones] = await Promise.all([searchParams, listarProveedores(), opcionesCompra()]);
   const prov = typeof sp.proveedor === "string" ? sp.proveedor : "";
-  const variante = typeof sp.variante === "string" ? sp.variante : "";
+  // ?materia=<id> o ?variante=<id> precargan la línea
+  const variante = typeof sp.materia === "string" ? `m:${sp.materia}` : typeof sp.variante === "string" ? `v:${sp.variante}` : "";
   const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "America/Tegucigalpa" });
   return (
     <>

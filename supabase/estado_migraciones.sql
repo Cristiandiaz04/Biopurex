@@ -33,6 +33,10 @@ from (values
     to_regclass('public.compras') is not null
     and to_regclass('public.cotizaciones') is not null
     and to_regclass('public.facturas') is not null
-    and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'configuracion' and column_name = 'razon_social'))
+    and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'configuracion' and column_name = 'razon_social')),
+  ('0006_materia_prima_produccion',
+    to_regclass('public.materias_primas') is not null
+    and to_regclass('public.recetas') is not null
+    and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'compra_items' and column_name = 'materia_id'))
 ) as t(migracion, corrida)
 order by migracion;

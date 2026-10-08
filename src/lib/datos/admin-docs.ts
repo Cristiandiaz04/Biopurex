@@ -1,6 +1,7 @@
 import "server-only";
 import type { EstadoPedido } from "@/lib/pedidos";
 import { exigirAdmin, listarInventario, type TipoCliente } from "./admin";
+import { listarMaterias } from "./produccion";
 
 const n = (x: unknown) => Number(x ?? 0);
 const ISV = 0.15;
@@ -20,6 +21,8 @@ export type OpcionVariante = {
   costo: number | null;
   stock: number;
   disponible: number;
+  /** Solo materia prima: unidad de medida (kg, lb…). */
+  unidad?: string;
 };
 
 export async function opcionesVariantes(): Promise<OpcionVariante[]> {
@@ -38,6 +41,31 @@ export async function opcionesVariantes(): Promise<OpcionVariante[]> {
       disponible: v.stock - v.apartado,
     })),
   );
+}
+
+/**
+ * Opciones para las líneas de compra: materia prima ("m:<id>") y productos de reventa ("v:<id>").
+ */
+export async function opcionesCompra(): Promise<OpcionVariante[]> {
+  const [materias, variantes] = await Promise.all([listarMaterias(), opcionesVariantes()]);
+  return [
+    ...materias
+      .filter((m) => m.activo)
+      .map((m) => ({
+        id: `m:${m.id}`,
+        producto: "Materia prima",
+        etiqueta: m.nombre,
+        aroma: null,
+        img: "",
+        sku: m.codigo,
+        precio: null,
+        costo: m.costo,
+        stock: m.stock,
+        disponible: m.stock,
+        unidad: m.unidad,
+      })),
+    ...variantes.map((v) => ({ ...v, id: `v:${v.id}`, producto: `Reventa · ${v.producto}` })),
+  ];
 }
 
 // ---------------------------------------------------------------------------
@@ -74,7 +102,7 @@ export type FilaCompra = {
 const SELECT_PROVEEDOR = "id, nombre, rtn, contacto, telefono, correo, direccion, ciudad, condiciones, activo";
 
 function aCompra(c: Record<string, unknown>): FilaCompra {
-  const items = (c.compra_items as { cantidad: number; total: number | string }[]) ?? [];
+  const items = ((c.compra_items as { cantidad: number | string; total: number | string }[]) ?? []).map((i) => ({ cantidad: n(i.cantidad), total: i.total }));
   const subtotal = items.reduce((s, i) => s + n(i.total), 0);
   const prov = c.proveedores as { nombre: string } | null;
   return {
@@ -121,7 +149,7 @@ export async function obtenerCompra(id: string) {
   const { data: c } = await supabase
     .from("compras")
     .select(
-      "id, codigo, proveedor_id, factura_proveedor, fecha, estado, notas, recibida_en, proveedores(nombre), compra_items(id, variante_id, cantidad, costo_unitario, total)",
+      "id, codigo, proveedor_id, factura_proveedor, fecha, estado, notas, recibida_en, proveedores(nombre), compra_items(id, variante_id, materia_id, cantidad, costo_unitario, total)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -131,10 +159,11 @@ export async function obtenerCompra(id: string) {
     ...fila,
     notas: c.notas as string | null,
     recibidaEn: c.recibida_en as string | null,
-    lineas: (c.compra_items as { id: string; variante_id: string; cantidad: number; costo_unitario: number | string; total: number | string }[]).map((i) => ({
+    lineas: (c.compra_items as { id: string; variante_id: string | null; materia_id: string | null; cantidad: number | string; costo_unitario: number | string; total: number | string }[]).map((i) => ({
       id: i.id,
-      varianteId: i.variante_id,
-      cantidad: i.cantidad,
+      // "m:<id>" materia prima · "v:<id>" producto de reventa
+      varianteId: i.materia_id ? `m:${i.materia_id}` : `v:${i.variante_id}`,
+      cantidad: n(i.cantidad),
       costo: n(i.costo_unitario),
       total: n(i.total),
     })),
@@ -148,7 +177,7 @@ export async function obtenerProveedor(id: string) {
     supabase.from("proveedores").select(SELECT_PROVEEDOR).eq("id", id).maybeSingle(),
     supabase
       .from("compras")
-      .select("id, codigo, proveedor_id, factura_proveedor, fecha, estado, proveedores(nombre), compra_items(cantidad, total, variante_id)")
+      .select("id, codigo, proveedor_id, factura_proveedor, fecha, estado, proveedores(nombre), compra_items(cantidad, total, variante_id, materia_id)")
       .eq("proveedor_id", id)
       .order("numero", { ascending: false }),
   ]);
@@ -157,7 +186,10 @@ export async function obtenerProveedor(id: string) {
   const variantes = new Map<string, number>();
   for (const c of compras ?? []) {
     if (c.estado !== "recibida") continue;
-    for (const i of c.compra_items as { variante_id: string; cantidad: number }[]) variantes.set(i.variante_id, (variantes.get(i.variante_id) ?? 0) + i.cantidad);
+    for (const i of c.compra_items as { variante_id: string | null; materia_id: string | null; cantidad: number | string }[]) {
+      const clave = i.materia_id ? `m:${i.materia_id}` : `v:${i.variante_id}`;
+      variantes.set(clave, (variantes.get(clave) ?? 0) + n(i.cantidad));
+    }
   }
   return { proveedor: p as Proveedor, compras: filas, variantes };
 }

@@ -88,12 +88,17 @@ export async function guardarCompra(d: {
   if (lineas.length > 200) return { error: "Demasiadas líneas" };
   const filas = [];
   for (const [i, l] of lineas.entries()) {
-    const cant = Number(l.cantidad);
+    // "m:<id>" = materia prima (admite decimales) · "v:<id>" o <id> = producto de reventa (enteros).
+    const esMateria = l.varianteId.startsWith("m:");
+    const id = l.varianteId.replace(/^[mv]:/, "");
+    const cant = Number(l.cantidad.replace(/,/g, ""));
     const costo = dinero(l.costo);
-    if (!UUID.test(l.varianteId)) return { error: `Línea ${i + 1}: variante no válida` };
-    if (!Number.isInteger(cant) || cant < 1 || cant > 100000) return { error: `Línea ${i + 1}: cantidad no válida` };
+    if (!UUID.test(id)) return { error: `Línea ${i + 1}: elige qué compraste` };
+    if (!Number.isFinite(cant) || cant <= 0 || cant > 1000000 || (!esMateria && !Number.isInteger(cant))) {
+      return { error: `Línea ${i + 1}: ${esMateria ? "cantidad mayor que cero" : "los productos se compran en unidades enteras"}` };
+    }
     if (costo === "error" || costo === null) return { error: `Línea ${i + 1}: escribe el costo unitario` };
-    filas.push({ variante_id: l.varianteId, cantidad: cant, costo_unitario: costo });
+    filas.push(esMateria ? { materia_id: id, cantidad: cant, costo_unitario: costo } : { variante_id: id, cantidad: cant, costo_unitario: costo });
   }
 
   const { supabase } = await exigirAdmin();

@@ -1,17 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { Plus } from "lucide-react";
+import { FlaskConical, Plus } from "lucide-react";
 import { BotonProveedor } from "@/components/admin/proveedores";
 import { boton, CabeceraTarjeta, Chip, PuntoAroma, Tarjeta, td, th, TituloPagina } from "@/components/admin/ui";
-import { obtenerProveedor, opcionesVariantes } from "@/lib/datos/admin-docs";
+import { obtenerProveedor, opcionesCompra } from "@/lib/datos/admin-docs";
 import { lempiras } from "@/lib/formato";
+import { cantidad } from "@/lib/unidades";
 
 export const metadata = { title: "Ficha de proveedor" };
 
 async function Ficha({ params }: { params: PageProps<"/admin/proveedores/[id]">["params"] }) {
   const { id } = await params;
-  const [r, opciones] = await Promise.all([obtenerProveedor(id), opcionesVariantes()]);
+  const [r, opciones] = await Promise.all([obtenerProveedor(id), opcionesCompra()]);
   if (!r) notFound();
   const { proveedor: p, compras, variantes } = r;
   const total = compras.filter((c) => c.estado === "recibida").reduce((s, c) => s + c.total, 0);
@@ -29,19 +30,30 @@ async function Ficha({ params }: { params: PageProps<"/admin/proveedores/[id]">[
       <div className="grid grid-cols-1 items-start gap-4 min-[1180px]:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <div className="flex min-w-0 flex-col gap-4">
           <Tarjeta className="p-4">
-            <h2 className="mb-3 mt-0 text-base font-bold">Productos que suministra</h2>
+            <h2 className="mb-3 mt-0 text-base font-bold">Lo que suministra</h2>
             {suministra.length === 0 ? (
               <p className="m-0 text-sm text-text-2">Aparecen aquí cuando recibas su primera compra.</p>
             ) : (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2.5">
                 {suministra.map((o) => (
                   <div key={o.id} className="flex items-center gap-2.5 rounded-sm p-2.5 shadow-[inset_0_0_0_1px_var(--border)]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={o.img} alt="" className="size-10 flex-none object-contain" />
-                    <span>
-                      <span className="block text-sm font-semibold">{o.producto}</span>
-                      <span className="flex items-center gap-1.5 text-xs text-text-2"><PuntoAroma aroma={o.aroma} />{o.etiqueta} · {variantes.get(o.id)} u.</span>
-                    </span>
+                    {o.unidad ? (
+                      <span className="flex size-10 flex-none items-center justify-center rounded-sm bg-surface text-text-2"><FlaskConical size={16} aria-hidden /></span>
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={o.img} alt="" className="size-10 flex-none object-contain" />
+                    )}
+                    {o.unidad ? (
+                      <span>
+                        <span className="block text-sm font-semibold">{o.etiqueta}</span>
+                        <span className="text-xs text-text-2">Materia prima · {cantidad(variantes.get(o.id) ?? 0, o.unidad)}</span>
+                      </span>
+                    ) : (
+                      <span>
+                        <span className="block text-sm font-semibold">{o.producto.replace(/^Reventa · /, "")}</span>
+                        <span className="flex items-center gap-1.5 text-xs text-text-2"><PuntoAroma aroma={o.aroma} />{o.etiqueta} · {variantes.get(o.id)} u.</span>
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>

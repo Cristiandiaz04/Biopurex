@@ -41,7 +41,7 @@ for (const archivo of readdirSync(dir).filter((x) => x.endsWith(".sql")).sort())
   ok(true, archivo + " corre sin errores");
 }
 // Las migraciones idempotentes se pueden volver a correr (p. ej. si Supabase cortó por un bloqueo).
-for (const archivo of ["0005_compras_cotizaciones_facturas.sql"]) {
+for (const archivo of ["0005_compras_cotizaciones_facturas.sql", "0006_materia_prima_produccion.sql"]) {
   await run(readFileSync(dir + "/" + archivo, "utf8"));
   ok(true, archivo + " se puede volver a correr");
 }
@@ -171,6 +171,36 @@ try { await como(U1, () => q("select public.admin_emitir_factura($1)", [pc.id]))
 await como(AD, () => q("select public.admin_anular_factura($1, 'Error en RTN')", [fr.id]));
 const fac2 = await como(AD, async () => (await q("select public.admin_emitir_factura($1) c", [pc.id]))[0].c);
 ok(fac2 === "FAC-000002", "anulada → se puede volver a facturar (" + fac2 + ")");
+
+// ---- 0006: materia prima, reglas de creación y producción ----
+const mp = async (codigo, nombre, unidad) => (await como(AD, () => q("insert into public.materias_primas (codigo, nombre, unidad) values ($1,$2,$3) returning id", [codigo, nombre, unidad])))[0].id;
+const base = await mp("BASE-DES", "Base desinfectante", "kg");
+const aroLav = await mp("ARO-LAV", "Aromatizante lavanda", "lb");
+const colMor = await mp("COL-MOR", "Colorante morado", "lb");
+try { await como(AD, () => q("update public.materias_primas set stock = 99 where id = $1", [base])); ok(false, "stock MP a mano"); } catch { ok(true, "el stock de materia prima no se edita a mano"); }
+// Compra de materia prima (cantidades con decimales)
+const cmp2 = await como(AD, async () => (await q("insert into public.compras (proveedor_id) values ($1) returning id", [prov]))[0].id);
+await como(AD, () => q("insert into public.compra_items (compra_id, materia_id, cantidad, costo_unitario) values ($1,$2,20,30), ($1,$3,10.5,80), ($1,$4,10,40)", [cmp2, base, aroLav, colMor]));
+await como(AD, () => q("select public.admin_recibir_compra($1)", [cmp2]));
+ok(Number((await q("select stock from public.materias_primas where id=$1", [aroLav]))[0].stock) === 10.5, "comprar materia prima suma 10.5 lb");
+ok(Number((await q("select costo_unitario from public.materias_primas where id=$1", [base]))[0].costo_unitario) === 30, "guarda el costo de la materia prima");
+try { await como(AD, () => q("insert into public.compra_items (compra_id, variante_id, cantidad, costo_unitario) values ($1,$2,1.5,10)", [cmp2, vLav])); ok(false, "decimal en producto"); } catch { ok(true, "un producto de reventa no admite cantidades con decimales"); }
+// Regla: 1 lote rinde 4 galones con 2 kg de base, 0.5 lb de aroma y 0.2 lb de colorante
+const rec = await como(AD, async () => (await q("insert into public.recetas (variante_id, rendimiento) values ($1, 4) returning id", [vLav]))[0].id);
+await como(AD, () => q("insert into public.receta_ingredientes (receta_id, materia_id, cantidad) values ($1,$2,2), ($1,$3,0.5), ($1,$4,0.2)", [rec, base, aroLav, colMor]));
+const stockAntes = (await q("select stock from public.variantes where id=$1", [vLav]))[0].stock;
+const prd = await como(AD, async () => (await q("select public.admin_producir($1, 12, 'Lote de prueba') c", [vLav]))[0].c);
+ok(prd === "PRD-0001", "producción numerada " + prd);
+ok((await q("select stock from public.variantes where id=$1", [vLav]))[0].stock === stockAntes + 12, "producir suma 12 galones al inventario de la tienda");
+ok(Number((await q("select stock from public.materias_primas where id=$1", [base]))[0].stock) === 14, "descuenta 6 kg de base (20 → 14)");
+ok(Number((await q("select stock from public.materias_primas where id=$1", [aroLav]))[0].stock) === 9, "descuenta 1.5 lb de aroma (10.5 → 9)");
+const pr = (await q("select * from public.producciones where codigo=$1", [prd]))[0];
+ok(Number(pr.costo_total) === 324 && Number(pr.costo_unitario) === 27, `costo de producción 6×30 + 1.5×80 + 0.6×40 = ${pr.costo_total} (27 por galón)`);
+ok(Number((await q("select p.costo from public.productos p join public.variantes v on v.producto_id=p.id where v.id=$1", [vLav]))[0].costo) === 27, "el costo del producto pasa a ser el de producción");
+try { await como(AD, () => q("select public.admin_producir($1, 1000)", [vLav])); ok(false, "produjo sin materia"); } catch (e) { ok(/^Falta materia prima: /.test(e.message) && e.message.includes("Base desinfectante (hay 14 kg"), "sin materia suficiente no produce: " + e.message.slice(0, 80)); }
+ok(Number((await q("select stock from public.materias_primas where id=$1", [base]))[0].stock) === 14, "un intento fallido no descuenta nada");
+try { await como(AD, () => q("select public.admin_producir($1, 1)", [vCloro])); ok(false, "sin receta"); } catch (e) { ok(/no tiene regla/.test(e.message), "sin regla de creación no produce"); }
+try { await como(U1, () => q("select public.admin_producir($1, 1)", [vLav])); ok(false, "cliente produjo"); } catch { ok(true, "un cliente no puede producir"); }
 
 console.log(fallas ? `\n${fallas} FALLAS` : "\nTodo OK");
 await db.close();

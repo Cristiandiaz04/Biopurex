@@ -103,7 +103,6 @@ export function FormularioCompra({
         <h2 className="m-0 text-base font-bold">Resumen</h2>
         <dl className="m-0 grid grid-cols-[1fr_auto] gap-2 text-sm tabular-nums">
           <dt className="text-text-2">Líneas</dt><dd className="m-0 text-right">{t.lineas}</dd>
-          <dt className="text-text-2">Unidades</dt><dd className="m-0 text-right">{t.unidades}</dd>
           <dt className="text-text-2">Subtotal</dt><dd className="m-0 text-right">{lempiras(t.monto)}</dd>
           <dt className="text-text-2">ISV 15 %</dt><dd className="m-0 text-right">{lempiras(isv)}</dd>
           <dt className="text-base font-bold">Total</dt><dd className="m-0 text-right text-base font-bold">{lempiras(t.monto + isv)}</dd>
@@ -111,7 +110,7 @@ export function FormularioCompra({
         <div className="flex gap-2.5 rounded-sm bg-success-50 p-3 text-[13px] leading-[1.45]">
           <Info size={16} className="flex-none text-success" aria-hidden />
           <span>
-            Al confirmar se sumarán <strong>{t.unidades} unidades</strong> al inventario y cada línea quedará como <strong>Entrada</strong> en el kardex de su variante. El costo del producto se actualiza con el de esta compra.
+            Al confirmar, la <strong>materia prima</strong> se suma a su inventario y los <strong>productos de reventa</strong> (escobas, dispensadores…) al de la tienda, cada línea como <strong>Entrada</strong> en su kardex. El costo se actualiza con el de esta compra.
           </span>
         </div>
         {error && <MensajeError>{error}</MensajeError>}
