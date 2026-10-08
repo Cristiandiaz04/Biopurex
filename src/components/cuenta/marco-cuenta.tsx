@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { KeyRound, LogOut, MapPin, Package, User } from "lucide-react";
+import { KeyRound, LayoutDashboard, LogOut, MapPin, Package, User } from "lucide-react";
 import { cerrarSesion } from "@/acciones/acceso";
 import type { Perfil } from "@/lib/datos/cuenta";
 
@@ -34,6 +34,12 @@ export function MarcoCuenta({ perfil, activo, children }: { perfil: Perfil; acti
                 {label}
               </Link>
             ))}
+            {perfil.rol === "admin" && (
+              <Link href="/admin" className="flex h-12 items-center gap-3 rounded-md bg-navy px-3.5 text-[15px] font-semibold text-white no-underline hover:bg-navy-700">
+                <LayoutDashboard size={20} aria-hidden />
+                Panel de administración
+              </Link>
+            )}
             <form action={cerrarSesion}>
               <button type="submit" className="flex h-12 w-full items-center gap-3 rounded-md px-3.5 text-[15px] text-error hover:bg-error-50">
                 <LogOut size={20} aria-hidden />
