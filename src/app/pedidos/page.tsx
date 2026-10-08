@@ -1,7 +1,14 @@
-import { ProximaFase } from "@/components/tienda/proxima-fase";
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import { VistaPedidos } from "@/components/pedidos/vista-pedidos";
+import { Cargando } from "@/components/ui/cargando";
 
-export const metadata = { title: "Mis pedidos" };
+export const metadata: Metadata = { title: "Mis pedidos" };
 
 export default function Pedidos() {
-  return <ProximaFase titulo="Mis pedidos" texto="Aquí vas a ver el estado de tus pedidos, subir tu comprobante y escribirnos. Se habilita en la siguiente fase." />;
+  return (
+    <Suspense fallback={<Cargando />}>
+      <VistaPedidos />
+    </Suspense>
+  );
 }

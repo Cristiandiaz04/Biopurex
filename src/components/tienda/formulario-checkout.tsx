@@ -80,7 +80,12 @@ export function FormularioCheckout({
   function cambiar<K extends keyof DatosEnvio>(k: K, v: string) {
     setDatos((d) => ({ ...d, [k]: v }));
     setElegida(null);
-    if (errores[k]) setErrores(({ [k]: _, ...resto }) => resto as Errores<DatosEnvio>);
+    if (errores[k])
+      setErrores((prev) => {
+        const resto = { ...prev };
+        delete resto[k];
+        return resto;
+      });
   }
 
   function usarDireccion(d: Direccion) {
