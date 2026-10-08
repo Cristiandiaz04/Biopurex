@@ -9,7 +9,6 @@ type FilaVariante = {
   aroma_id: string | null;
   etiqueta: string;
   img: string;
-  disponible: boolean;
   activo: boolean;
   orden: number;
 };
@@ -45,7 +44,6 @@ function aProducto(f: FilaProducto): Producto | null {
       aroma: esAroma(v.aroma_id) ? v.aroma_id : null,
       etiqueta: v.etiqueta,
       img: v.img,
-      agotado: !v.disponible,
     }));
   if (!variantes.length) return null;
   return {
@@ -82,7 +80,7 @@ export async function obtenerProductos(): Promise<Producto[]> {
   cacheTag("catalogo");
 
   const columnas = (codigo: string) =>
-    `slug, ${codigo}linea, nombre, nombre_base, tamano, categoria_id, categorias(nombre, oscura), precio, descripcion, beneficios, modo_uso, seguridad, cotizar, insignias, tinte, notas, variantes(id, clave, aroma_id, etiqueta, img, disponible, activo, orden)`;
+    `slug, ${codigo}linea, nombre, nombre_base, tamano, categoria_id, categorias(nombre, oscura), precio, descripcion, beneficios, modo_uso, seguridad, cotizar, insignias, tinte, notas, variantes(id, clave, aroma_id, etiqueta, img, activo, orden)`;
   const consulta = (codigo: string) => clientePublico().from("productos").select(columnas(codigo)).eq("activo", true).order("orden");
   let { data, error } = await consulta("codigo, ");
   // Sin la migración 0008 todavía no existe productos.codigo: la tienda sigue funcionando sin código.

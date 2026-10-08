@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { CheckCircle2, ChevronLeft, Package } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronLeft, Package } from "lucide-react";
 import { listarPedidos, obtenerPedido } from "@/lib/datos/pedidos";
 import { fechaHN } from "@/lib/pedidos";
 import { lempiras } from "@/lib/formato";
@@ -64,6 +64,14 @@ export async function VistaPedidos({ codigo }: { codigo?: string }) {
                     <InsigniaEstado estado={pedido.estado} grande />
                   </div>
                   <LineaTiempo pedido={pedido} />
+                  {pedido.estado === "esperando_pago" && pedido.problemaPago && (
+                    <div role="alert" className="mt-4 flex items-start gap-2.5 rounded-md bg-warning-50 px-3.5 py-3 text-sm leading-normal text-warning">
+                      <AlertTriangle size={18} className="mt-0.5 flex-none" aria-hidden />
+                      <span>
+                        <strong>Hubo un problema con tu pago:</strong> {pedido.problemaPago}. Sube un nuevo comprobante para continuar.
+                      </span>
+                    </div>
+                  )}
                   {pedido.estado === "esperando_pago" && (
                     <SubirComprobante usuarioId={auth.user.id} pedidoId={pedido.id} codigo={pedido.codigo} />
                   )}

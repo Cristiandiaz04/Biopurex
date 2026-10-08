@@ -2,6 +2,7 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { esAroma } from "@/lib/catalogo";
+import { notificarPedido, type EventoPedido } from "@/lib/correo-pedidos";
 import { exigirAdmin } from "@/lib/datos/admin";
 
 export type Resultado = { ok?: string; error?: string; errores?: Record<string, string>; slug?: string };
@@ -18,8 +19,17 @@ function fallo(contexto: string, error: { code?: string; message: string }): Res
 // Pedidos
 // ---------------------------------------------------------------------------
 
+/** Correo que recibe el cliente después de cada acción del admin. */
+const CORREO: Record<string, EventoPedido> = {
+  admin_confirmar_pago: "confirmado",
+  admin_problema_pago: "problema_pago",
+  admin_marcar_enviado: "enviado",
+  admin_marcar_entregado: "entregado",
+  admin_cancelar_pedido: "cancelado",
+};
+
 async function accionPedido(
-  rpc: "admin_confirmar_pago" | "admin_marcar_enviado" | "admin_marcar_entregado" | "admin_cancelar_pedido",
+  rpc: "admin_confirmar_pago" | "admin_problema_pago" | "admin_marcar_enviado" | "admin_marcar_entregado" | "admin_cancelar_pedido",
   args: Record<string, unknown>,
   codigo: string,
   ok: string,
@@ -27,16 +37,24 @@ async function accionPedido(
   const { supabase } = await exigirAdmin();
   const { error } = await supabase.rpc(rpc, args);
   if (error) return fallo(rpc, error);
+  await notificarPedido(supabase, codigo, CORREO[rpc]);
   revalidatePath(`/admin/pedidos/${codigo}`);
   revalidatePath("/admin/pedidos");
   revalidatePath(`/pedidos/${codigo}`);
-  updateTag("catalogo"); // la disponibilidad pudo cambiar
+  updateTag("catalogo");
   return { ok };
 }
 
 export async function confirmarPago(pedidoId: string, codigo: string) {
   if (!UUID.test(pedidoId)) return { error: "Pedido no válido" };
   return accionPedido("admin_confirmar_pago", { p_pedido: pedidoId }, codigo, "Pago confirmado");
+}
+
+export async function problemaPago(pedidoId: string, codigo: string, motivo: string) {
+  if (!UUID.test(pedidoId)) return { error: "Pedido no válido" };
+  const m = motivo.trim().slice(0, 300);
+  if (m.length < 3) return { error: "Elige qué problema tiene el pago" };
+  return accionPedido("admin_problema_pago", { p_pedido: pedidoId, p_motivo: m }, codigo, "Se avisó al cliente del problema con el pago");
 }
 
 export async function marcarEnviado(pedidoId: string, codigo: string) {

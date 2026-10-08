@@ -39,6 +39,8 @@ export type DetallePedido = ResumenPedido & {
   direccion: string;
   comprobante: string | null;
   motivoCancelacion: string | null;
+  /** Motivo si el admin marcó un problema con el pago (el pedido vuelve a esperando pago). */
+  problemaPago: string | null;
   fechas: Partial<Record<EstadoPedido, string | null>>;
   items: ItemPedido[];
   mensajes: MensajePedido[];
@@ -72,7 +74,7 @@ export async function obtenerPedido(codigo: string): Promise<DetallePedido | nul
   const { data: p } = await supabase
     .from("pedidos")
     .select(
-      "id, codigo, estado, tipo_cliente, subtotal, descuento, codigo_descuento, descuento_porcentaje, envio, total, zona_envio, contacto_nombre, contacto_correo, contacto_telefono, departamento, ciudad, colonia, direccion, referencia, comprobante_path, motivo_cancelacion, creado_en, pago_revision_en, confirmado_en, enviado_en, entregado_en, cancelado_en, pedido_items(id, producto_slug, producto_nombre, aroma_id, aroma_nombre, tamano, img, precio_unitario, cantidad, total), pedido_mensajes(id, texto, de_admin, creado_en)",
+      "id, codigo, estado, tipo_cliente, subtotal, descuento, codigo_descuento, descuento_porcentaje, envio, total, zona_envio, contacto_nombre, contacto_correo, contacto_telefono, departamento, ciudad, colonia, direccion, referencia, comprobante_path, motivo_cancelacion, problema_pago, creado_en, pago_revision_en, confirmado_en, enviado_en, entregado_en, cancelado_en, pedido_items(id, producto_slug, producto_nombre, aroma_id, aroma_nombre, tamano, img, precio_unitario, cantidad, total), pedido_mensajes(id, texto, de_admin, creado_en)",
     )
     .eq("codigo", codigo)
     .maybeSingle();
@@ -110,6 +112,7 @@ export async function obtenerPedido(codigo: string): Promise<DetallePedido | nul
     direccion: [p.direccion, p.colonia, `${p.ciudad}, ${p.departamento}`, p.referencia].filter(Boolean).join(" · "),
     comprobante: p.comprobante_path ? (p.comprobante_path as string).split("/").pop()!.replace(/^\d+-/, "") : null,
     motivoCancelacion: p.motivo_cancelacion,
+    problemaPago: p.problema_pago ?? null,
     fechas: {
       esperando_pago: p.creado_en,
       pago_en_revision: p.pago_revision_en,

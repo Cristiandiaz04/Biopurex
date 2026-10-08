@@ -4,6 +4,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AROMAS, type Producto, type Variante } from "@/lib/catalogo";
 import { useCatalogo } from "./catalogo-provider";
 
+/** Tope por línea (el mismo que en crear_pedido). No depende del stock: lo que falte se produce. */
+const MAXIMO = 999;
+
 export type ItemCarrito = { slug: string; clave: string; cantidad: number };
 
 export type LineaCarrito = ItemCarrito & { producto: Producto; variante: Variante; total: number };
@@ -90,7 +93,7 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
         const i = prev.findIndex((x) => x.slug === slug && x.clave === clave);
         if (i < 0) return [...prev, { slug, clave, cantidad }];
         const copia = [...prev];
-        copia[i] = { ...copia[i], cantidad: Math.min(99, copia[i].cantidad + cantidad) };
+        copia[i] = { ...copia[i], cantidad: Math.min(MAXIMO, copia[i].cantidad + cantidad) };
         return copia;
       });
       const v = p.variantes.find((x) => x.clave === clave);
@@ -102,7 +105,7 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
   const cambiar = useCallback((slug: string, clave: string, delta: number) => {
     setItems((prev) =>
       prev
-        .map((x) => (x.slug === slug && x.clave === clave ? { ...x, cantidad: Math.min(99, x.cantidad + delta) } : x))
+        .map((x) => (x.slug === slug && x.clave === clave ? { ...x, cantidad: Math.min(MAXIMO, x.cantidad + delta) } : x))
         .filter((x) => x.cantidad > 0),
     );
   }, []);

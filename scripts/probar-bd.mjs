@@ -42,7 +42,7 @@ for (const archivo of readdirSync(dir).filter((x) => x.endsWith(".sql")).sort())
 }
 // Las migraciones idempotentes se pueden volver a correr (p. ej. si Supabase cortó por un bloqueo).
 // (en orden: 0007 redefine _crear_pedido de 0005)
-for (const archivo of ["0005_compras_cotizaciones_facturas.sql", "0006_materia_prima_produccion.sql", "0007_zonas_envio.sql", "0008_categorias_codigos.sql"]) {
+for (const archivo of ["0005_compras_cotizaciones_facturas.sql", "0006_materia_prima_produccion.sql", "0007_zonas_envio.sql", "0008_categorias_codigos.sql", "0009_stock_libre_problema_pago.sql"]) {
   await run(readFileSync(dir + "/" + archivo, "utf8"));
   ok(true, archivo + " se puede volver a correr");
 }
@@ -68,8 +68,6 @@ let v = (await q("select stock, stock_apartado from public.variantes where id=$1
 ok(v.stock === 30 && v.stock_apartado === 2, `stock apartado (${v.stock} / ${v.stock_apartado})`);
 ok((await q("select count(*)::int n from public.direcciones where usuario_id=$1", [U1]))[0].n === 1, "dirección guardada");
 
-try { await como(U1, () => q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb)", [items([[vCit, 1]]), contacto, dirSPS])); ok(false, "agotado debía fallar"); }
-catch (e) { ok(/No hay suficiente/.test(e.message), "agotado rechazado: " + e.message); }
 try { await como(U1, () => q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb)", [items([[vLav, 1]]), JSON.stringify({ nombre: "M", correo: "x", telefono: "1" }), dirSPS])); ok(false, "datos malos"); }
 catch (e) { ok(/nombre/.test(e.message), "valida datos: " + e.message); }
 
@@ -240,6 +238,25 @@ ok((await codP("ind-2")).startsWith("01"), "al cambiar de categoría recibe cód
 await como(AD, () => q("update public.productos set codigo='999999', precio=11 where slug='ind-1'"));
 ok(await codP("ind-1") === "090001", "el código no se cambia a mano");
 try { await como(U1, () => q("insert into public.categorias (id, nombre, corto) values ('x','X','X')")); ok(false, "cliente creó categoría"); } catch { ok(true, "un cliente no puede crear categorías"); }
+
+// ---- 0009: sin límite de stock y problema con el pago ----
+const stockCit = async () => (await q("select stock, stock_apartado from public.variantes where id=$1", [vCit]))[0];
+const antesCit = await stockCit();
+const codSin = await como(U1, async () => (await q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb) c", [items([[vCit, antesCit.stock + 5]]), contacto, dirSPS2]))[0].c);
+ok(!!codSin, `se puede pedir más de lo que hay en stock (${antesCit.stock} en stock, se pidieron ${antesCit.stock + 5})`);
+const pSin = (await q("select * from public.pedidos where codigo=$1", [codSin]))[0];
+await como(U1, () => q("select public.registrar_comprobante($1,$2)", [pSin.id, `${U1}/${pSin.id}/foto.jpg`]));
+try { await como(U1, () => q("select public.admin_problema_pago($1,$2)", [pSin.id, "No es un comprobante"])); ok(false, "cliente marcó problema"); } catch { ok(true, "un cliente no puede marcar problema con el pago"); }
+await como(AD, () => q("select public.admin_problema_pago($1,$2)", [pSin.id, "La imagen no es un comprobante"]));
+let pp = (await q("select estado, problema_pago from public.pedidos where id=$1", [pSin.id]))[0];
+ok(pp.estado === "esperando_pago" && pp.problema_pago === "La imagen no es un comprobante", "problema con el pago: vuelve a esperando pago con el motivo (no se cancela)");
+ok((await q("select count(*)::int n from public.pedido_mensajes where pedido_id=$1 and de_admin", [pSin.id]))[0].n === 1, "el motivo queda en el chat del pedido");
+ok((await stockCit()).stock_apartado === antesCit.stock_apartado + antesCit.stock + 5, "el stock sigue apartado");
+await como(U1, () => q("select public.registrar_comprobante($1,$2)", [pSin.id, `${U1}/${pSin.id}/bueno.jpg`]));
+pp = (await q("select estado, problema_pago from public.pedidos where id=$1", [pSin.id]))[0];
+ok(pp.estado === "pago_en_revision" && pp.problema_pago === null, "al subir otro comprobante vuelve a revisión");
+await como(AD, () => q("select public.admin_confirmar_pago($1)", [pSin.id]));
+ok((await stockCit()).stock === -5, "confirmar deja el stock en negativo (unidades por producir)");
 
 console.log(fallas ? `\n${fallas} FALLAS` : "\nTodo OK");
 await db.close();

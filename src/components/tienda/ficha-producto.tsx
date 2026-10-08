@@ -53,7 +53,6 @@ export function FichaProducto({
   }
 
   function accion() {
-    if (v.agotado) return;
     if (cotizar) {
       window.location.href = COTIZAR(p);
       return;
@@ -62,14 +61,13 @@ export function FichaProducto({
   }
 
   const insignias: InsigniaId[] = [...p.insignias];
-  if (v.agotado) insignias.push("agotado");
   if (p.tamano === "20 L") insignias.push("mayoreo");
 
   const pagina = tinte ? (oscuro ? "bg-aroma-page-dark" : "bg-aroma-page") : oscuro ? "bg-graphite" : "bg-surface";
   const th = oscuro
     ? { fg: "text-white", fg2: "text-on-dark-2", line: "border-graphite-3", sombraLinea: "var(--graphite-3)", btn: "bg-white text-graphite", surf: "bg-graphite-2", anillo: "var(--graphite)", anilloSel: "var(--white)" }
     : { fg: "text-navy", fg2: "text-text-2", line: "border-line", sombraLinea: "var(--border)", btn: "bg-navy text-white", surf: "bg-bg/70", anillo: "var(--bg)", anilloSel: "var(--navy)" };
-  const cta = v.agotado ? "Agotado" : cotizar ? "Solicitar cotización" : "Agregar al carrito";
+  const cta = cotizar ? "Solicitar cotización" : "Agregar al carrito";
 
   const contador = (alto: string, ancho: string) => (
     <div className={`inline-flex flex-none items-center rounded-full ${alto}`} style={{ boxShadow: `inset 0 0 0 1.5px ${th.sombraLinea}` }}>
@@ -79,7 +77,7 @@ export function FichaProducto({
       <span aria-live="polite" className="min-w-7 text-center font-bold tabular-nums">
         {cantidad}
       </span>
-      <button type="button" onClick={() => setCantidad((c) => Math.min(99, c + 1))} aria-label="Sumar uno" className={`flex items-center justify-center ${alto} ${ancho}`}>
+      <button type="button" onClick={() => setCantidad((c) => Math.min(999, c + 1))} aria-label="Sumar uno" className={`flex items-center justify-center ${alto} ${ancho}`}>
         <Plus size={16} strokeWidth={2.25} aria-hidden />
       </button>
     </div>
@@ -148,7 +146,6 @@ export function FichaProducto({
               <div>
                 <div className="mb-1.5 text-sm">
                   Aroma: <strong>{v.etiqueta}</strong>
-                  {v.agotado && <span className={th.fg2}> · Agotado</span>}
                 </div>
                 <div role="radiogroup" aria-label="Aroma" className="-ml-1.5 flex flex-wrap gap-1">
                   {p.variantes.map((x) => {
@@ -159,7 +156,7 @@ export function FichaProducto({
                         type="button"
                         role="radio"
                         aria-checked={sel}
-                        aria-label={x.etiqueta + (x.agotado ? " (agotado)" : "")}
+                        aria-label={x.etiqueta}
                         title={x.etiqueta}
                         onClick={() => elegir(x.clave)}
                         className="flex size-12 items-center justify-center rounded-full"
@@ -168,11 +165,9 @@ export function FichaProducto({
                           className="relative size-8 overflow-hidden rounded-full transition-shadow"
                           style={{
                             background: x.aroma ? aromaVar(x.aroma) : undefined,
-                            opacity: x.agotado ? 0.45 : 1,
                             boxShadow: sel ? `0 0 0 3px ${th.anillo}, 0 0 0 5px ${th.anilloSel}` : `0 0 0 1px ${oscuro ? "var(--graphite-3)" : "rgba(30,42,94,.12)"}`,
                           }}
                         >
-                          {x.agotado && <span className="absolute -inset-x-1 top-1/2 h-0.5 -rotate-45 bg-white" />}
                         </span>
                       </button>
                     );
@@ -220,7 +215,6 @@ export function FichaProducto({
               <button
                 type="button"
                 onClick={accion}
-                disabled={v.agotado}
                 className={`flex h-[52px] flex-1 items-center justify-center gap-2 rounded-full px-6 font-semibold transition-transform active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-45 ${th.btn}`}
               >
                 <ShoppingBag size={20} aria-hidden />
@@ -313,11 +307,10 @@ export function FichaProducto({
         <button
           type="button"
           onClick={accion}
-          disabled={v.agotado}
           className={`flex h-[52px] min-w-0 flex-1 items-center justify-center gap-2 rounded-full px-4 text-[15px] font-semibold disabled:cursor-not-allowed disabled:opacity-45 ${th.btn}`}
         >
           {cta}
-          {!cotizar && !v.agotado && <span className="font-medium opacity-85">{lempiras((p.precio ?? 0) * cantidad)}</span>}
+          {!cotizar && <span className="font-medium opacity-85">{lempiras((p.precio ?? 0) * cantidad)}</span>}
         </button>
       </div>
     </main>

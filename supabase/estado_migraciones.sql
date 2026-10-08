@@ -44,6 +44,8 @@ from (values
     and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'configuracion' and column_name = 'envio_gratis_desde')),
   ('0008_categorias_codigos',
     exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'categorias' and column_name = 'numero')
-    and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'productos' and column_name = 'codigo'))
+    and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'productos' and column_name = 'codigo')),
+  ('0009_stock_libre_problema_pago',
+    exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'pedidos' and column_name = 'problema_pago'))
 ) as t(migracion, corrida)
 order by migracion;

@@ -2,13 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Box, Check, PackageCheck, Truck, Wallet, X } from "lucide-react";
-import { cancelarPedido, confirmarPago, marcarEntregado, marcarEnviado } from "@/acciones/admin";
+import { AlertTriangle, Box, Check, PackageCheck, Truck, Wallet, X } from "lucide-react";
+import { cancelarPedido, confirmarPago, marcarEntregado, marcarEnviado, problemaPago } from "@/acciones/admin";
 import type { TipoCliente } from "@/lib/datos/admin";
 import { lempiras } from "@/lib/formato";
 import type { EstadoPedido } from "@/lib/pedidos";
 import { Modal } from "./modal";
 import { boton } from "./ui";
+
+const PROBLEMAS = ["La imagen no es un comprobante de pago", "El monto no coincide con el total", "No encontramos la transferencia en el banco", "El comprobante no se lee bien", "Otro"];
 
 const MOTIVOS = ["Cliente lo solicitó", "Pago no recibido", "Sin stock suficiente", "Datos de envío incorrectos", "Pedido duplicado", "Otro"];
 
@@ -29,7 +31,7 @@ export function AccionesPedido({
 }) {
   const router = useRouter();
   const [pendiente, iniciar] = useTransition();
-  const [modal, setModal] = useState<"cancelar" | "cobro" | null>(null);
+  const [modal, setModal] = useState<"cancelar" | "cobro" | "problema" | null>(null);
   const [motivo, setMotivo] = useState("");
   const [detalle, setDetalle] = useState("");
   const [metodo, setMetodo] = useState<"efectivo" | "tarjeta" | "transferencia">("efectivo");
@@ -81,6 +83,12 @@ export function AccionesPedido({
             {label}
           </button>
         ))}
+        {estado === "pago_en_revision" && (
+          <button type="button" disabled={pendiente} onClick={() => { setMotivo(""); setDetalle(""); setError(null); setModal("problema"); }} className={boton.secundario}>
+            <AlertTriangle size={16} strokeWidth={2.25} aria-hidden />
+            Problema con el pago
+          </button>
+        )}
         <button type="button" disabled={!cancelable || pendiente} onClick={() => setModal("cancelar")} className={boton.peligro}>
           <X size={16} strokeWidth={2.25} aria-hidden />
           Cancelar
@@ -153,6 +161,66 @@ export function AccionesPedido({
               className="inline-flex h-10 items-center rounded-full bg-error px-5 text-sm font-semibold text-white disabled:opacity-60"
             >
               Sí, cancelar pedido
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {modal === "problema" && (
+        <Modal
+          titulo="Problema con el pago"
+          sub="El pedido no se cancela: vuelve a «Esperando pago», el cliente recibe un correo con el motivo y puede subir otro comprobante."
+          cerrar={() => setModal(null)}
+        >
+          <div role="radiogroup" aria-label="Problema" className="flex flex-col gap-1.5">
+            <div className="mb-0.5 text-[13px] font-semibold">¿Qué pasa con el pago?</div>
+            {PROBLEMAS.map((m) => (
+              <button
+                key={m}
+                type="button"
+                role="radio"
+                aria-checked={motivo === m}
+                onClick={() => setMotivo(m)}
+                className={`flex min-h-11 items-center gap-3 rounded-sm px-3.5 text-left text-sm font-medium ${
+                  motivo === m ? "bg-navy-50 shadow-[inset_0_0_0_1.5px_var(--navy)]" : "shadow-[inset_0_0_0_1px_var(--border)]"
+                }`}
+              >
+                <span
+                  className="size-[18px] flex-none rounded-full"
+                  style={{ boxShadow: motivo === m ? "inset 0 0 0 5px var(--navy)" : "inset 0 0 0 1.5px var(--border)" }}
+                />
+                {m}
+              </button>
+            ))}
+          </div>
+          <label className="flex flex-col gap-1.5 text-[13px] font-semibold">
+            Detalle para el cliente {motivo === "Otro" ? "" : "(opcional)"}
+            <textarea
+              value={detalle}
+              onChange={(e) => setDetalle(e.target.value)}
+              rows={2}
+              maxLength={200}
+              placeholder="Ej.: el comprobante es de L. 500 y el total es L. 620"
+              className="resize-y rounded-sm border-[1.5px] border-line px-3 py-2.5 text-sm font-normal text-navy outline-none focus:border-navy"
+            />
+          </label>
+          {error && <div role="alert" className="text-[13px] font-semibold text-error">{error}</div>}
+          <div className="flex flex-wrap justify-end gap-2.5">
+            <button type="button" onClick={() => setModal(null)} className={boton.secundario}>
+              Volver
+            </button>
+            <button
+              type="button"
+              disabled={pendiente}
+              onClick={() => {
+                if (!motivo) return setError("Elige qué problema tiene el pago");
+                const texto = motivo === "Otro" ? detalle.trim() : detalle.trim() ? `${motivo}: ${detalle.trim()}` : motivo;
+                if (texto.length < 3) return setError("Escribe el detalle del problema");
+                ejecutar(() => problemaPago(pedidoId, codigo, texto));
+              }}
+              className={boton.primario}
+            >
+              Avisar al cliente
             </button>
           </div>
         </Modal>

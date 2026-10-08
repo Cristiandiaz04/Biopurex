@@ -111,7 +111,6 @@ export type Variante = {
   aroma: AromaId | null;
   etiqueta: string;
   img: string;
-  agotado: boolean;
 };
 
 export type Producto = {
@@ -144,9 +143,9 @@ export const esOscuro = (p: Producto) => p.oscuro;
 
 export const esMayoreo = (p: Producto) => p.tamano === "20 L" || p.cotizar;
 
-/** Variante inicial: la pedida (si existe), si no la primera con stock. */
+/** Variante inicial: la pedida (si existe), si no la primera. */
 export function varianteInicial(p: Producto, clave?: string | null) {
-  return p.variantes.find((x) => x.clave === clave) ?? p.variantes.find((x) => !x.agotado) ?? p.variantes[0];
+  return p.variantes.find((x) => x.clave === clave) ?? p.variantes[0];
 }
 
 export function relacionados(p: Producto, productos: Producto[], n = 4) {

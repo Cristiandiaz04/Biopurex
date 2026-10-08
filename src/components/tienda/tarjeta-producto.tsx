@@ -19,11 +19,10 @@ export function TarjetaProducto({ producto: p, clave }: { producto: Producto; cl
   const tinte = v.aroma ?? p.tinte;
   const conAromas = p.variantes.length > 1;
   const href = `/producto/${p.slug}${conAromas ? `?aroma=${v.clave}` : ""}`;
-  const puedeAgregar = p.precio != null && !p.cotizar && !v.agotado;
+  const puedeAgregar = p.precio != null && !p.cotizar;
 
   const insignias: InsigniaId[] = [...p.insignias];
   if (esMayoreo(p)) insignias.push("mayoreo");
-  if (v.agotado) insignias.push("agotado");
 
   const fondo = tinte ? (oscura ? "bg-aroma-dark" : "bg-aroma-soft") : oscura ? "bg-graphite-2" : "bg-surface";
   const fg = oscura ? "text-white" : "text-navy";

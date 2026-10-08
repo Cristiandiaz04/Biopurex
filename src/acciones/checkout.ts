@@ -2,6 +2,7 @@
 
 import { updateTag } from "next/cache";
 import { obtenerZonas } from "@/lib/datos/catalogo";
+import { notificarPedido } from "@/lib/correo-pedidos";
 import { resolverZona } from "@/lib/envio";
 import { createClient } from "@/lib/supabase/server";
 import { hayErrores, soloDigitos, validarEnvio, type DatosEnvio, type Errores } from "@/lib/validacion";
@@ -23,7 +24,7 @@ export async function crearPedido(entrada: {
   const errores = validarEnvio(datos);
   if (hayErrores(errores)) return { error: "Revisa los campos marcados.", errores };
   if (!Array.isArray(items) || items.length === 0) return { error: "Tu carrito está vacío." };
-  if (items.length > 50 || items.some((i) => !UUID.test(i.varianteId) || !Number.isInteger(i.cantidad) || i.cantidad < 1 || i.cantidad > 99)) {
+  if (items.length > 50 || items.some((i) => !UUID.test(i.varianteId) || !Number.isInteger(i.cantidad) || i.cantidad < 1 || i.cantidad > 999)) {
     return { error: "Tu carrito tiene datos no válidos. Recarga la página." };
   }
 
@@ -58,7 +59,8 @@ export async function crearPedido(entrada: {
     return { error: conocido ? error.message : "No pudimos crear tu pedido. Intenta de nuevo en un momento." };
   }
 
-  updateTag("catalogo"); // la disponibilidad cambió
+  await notificarPedido(supabase, data as string, "creado");
+  updateTag("catalogo");
   return { codigo: data as string };
 }
 

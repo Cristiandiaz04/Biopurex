@@ -411,12 +411,6 @@ export function FormularioCheckout({
               {errorCupon && <span className="text-[13px] font-medium text-error">{errorCupon}</span>}
             </div>
             {error && <MensajeError>{error}</MensajeError>}
-            {lineas.some((l) => l.variante.agotado) && (
-              <div role="alert" className="flex items-start gap-2 rounded-md bg-warning-50 px-3.5 py-3 text-sm text-warning">
-                <AlertTriangle size={16} className="mt-0.5 flex-none" aria-hidden />
-                Algún producto de tu carrito se agotó. Quítalo para continuar.
-              </div>
-            )}
             <button
               type="button"
               onClick={confirmar}

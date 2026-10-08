@@ -2,6 +2,7 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { exigirAdmin } from "@/lib/datos/admin";
+import { notificarPedido } from "@/lib/correo-pedidos";
 import type { Resultado } from "./admin";
 
 const UUID = /^[0-9a-f-]{36}$/i;
@@ -192,6 +193,7 @@ export async function convertirCotizacion(id: string): Promise<Resultado & { cod
   const { supabase } = await exigirAdmin();
   const { data, error } = await supabase.rpc("admin_convertir_cotizacion", { p_cotizacion: id });
   if (error) return fallo("convertirCotizacion", error);
+  await notificarPedido(supabase, data as string, "creado");
   updateTag("catalogo");
   revalidatePath(`/admin/cotizaciones/${id}`);
   revalidatePath("/admin/cotizaciones");
