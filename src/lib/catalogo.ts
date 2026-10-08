@@ -72,39 +72,24 @@ export const esAroma = (a: unknown): a is AromaId => typeof a === "string" && a 
 
 export const aromaVar = (a: AromaId) => `var(--aroma-${a})`;
 
-export type CategoriaId =
-  | "hogar"
-  | "lavanderia"
-  | "cocina"
-  | "alimenticio"
-  | "aromatizantes"
-  | "auto"
-  | "articulos"
-  | "dispensadores";
+/** Las categorías viven en la BD (el admin las crea). El id es un slug: "hogar", "lavanderia"… */
+export type CategoriaId = string;
 
 export type Categoria = {
   id: CategoriaId;
+  /** 1–99: prefijo del código de sus productos (01 → 010001, 010002…). */
+  numero: number;
   nombre: string;
   corto: string;
-  img: string;
-  tinte?: AromaId;
-  oscura?: boolean;
+  /** Imagen de la tarjeta en el inicio (nombre en /img, sin extensión); si no hay, la de un producto. */
+  img: string | null;
+  tinte: AromaId | null;
+  oscura: boolean;
+  activo: boolean;
 };
 
-export const CATEGORIAS: Categoria[] = [
-  { id: "hogar", nombre: "Limpieza del hogar", corto: "Hogar", img: "des_lav_gal", tinte: "lavanda" },
-  { id: "lavanderia", nombre: "Lavandería", corto: "Lavandería", img: "biowash_sweet", tinte: "sweetfusion" },
-  { id: "cocina", nombre: "Cocina y manos", corto: "Cocina y manos", img: "manos_cereza", tinte: "cereza" },
-  { id: "alimenticio", nombre: "Grado alimenticio", corto: "Grado alimenticio", img: "biodish", tinte: "espuma" },
-  { id: "aromatizantes", nombre: "Aromatizantes BIOSCENT", corto: "Aromatizantes", img: "scent_mandarina", tinte: "mandarina" },
-  { id: "auto", nombre: "Línea automotriz", corto: "Automotriz", img: "foam_gal", oscura: true },
-  { id: "articulos", nombre: "Artículos de limpieza", corto: "Artículos", img: "escoba" },
-  { id: "dispensadores", nombre: "Dispensadores", corto: "Dispensadores", img: "disp_jabon" },
-];
-
-export const esCategoria = (c: unknown): c is CategoriaId => CATEGORIAS.some((x) => x.id === c);
-
-export const categoria = (id: CategoriaId) => CATEGORIAS.find((c) => c.id === id)!;
+/** 1 → "01" */
+export const prefijoCategoria = (numero: number) => String(numero).padStart(2, "0");
 
 export type Insignia = "mas" | "nuevo";
 
@@ -131,11 +116,16 @@ export type Variante = {
 
 export type Producto = {
   slug: string;
+  /** Código interno: categoría (2 dígitos) + correlativo (4 dígitos). */
+  codigo: string;
   lineaId: string;
   nombre: string;
   nombreBase: string;
   tamano: string;
   cat: CategoriaId;
+  catNombre: string;
+  /** La categoría usa el tema oscuro (línea automotriz). */
+  oscuro: boolean;
   precio: number | null;
   desc: string;
   beneficios: string[];
@@ -150,7 +140,7 @@ export type Producto = {
   hermanos: { slug: string; tamano: string }[];
 };
 
-export const esOscuro = (p: Producto) => p.cat === "auto";
+export const esOscuro = (p: Producto) => p.oscuro;
 
 export const esMayoreo = (p: Producto) => p.tamano === "20 L" || p.cotizar;
 
@@ -181,7 +171,7 @@ export function buscarProductos(
   let lista = productos.filter(
     (p) =>
       (!f.cat || p.cat === f.cat) &&
-      (!q || normalizar(p.nombre).includes(q) || normalizar(categoria(p.cat).nombre).includes(q)) &&
+      (!q || normalizar(p.nombre).includes(q) || normalizar(p.catNombre).includes(q) || p.codigo.startsWith(q)) &&
       (!f.aromas?.length || p.variantes.some((x) => x.aroma && f.aromas!.includes(x.aroma))) &&
       (!f.tamanos?.length || f.tamanos.includes(p.tamano)),
   );

@@ -2,6 +2,8 @@ import "server-only";
 import { notFound, redirect } from "next/navigation";
 import type { EstadoPedido } from "@/lib/pedidos";
 import { createClient } from "@/lib/supabase/server";
+import type { Categoria } from "@/lib/catalogo";
+import { aCategoria } from "./catalogo";
 
 const n = (x: unknown) => Number(x ?? 0);
 
@@ -187,6 +189,9 @@ export type VarianteAdmin = {
 export type ProductoAdmin = {
   id: string;
   slug: string;
+  codigo: string;
+  categoriaNombre: string;
+  categoriaCorto: string;
   linea: string;
   nombre: string;
   nombreBase: string;
@@ -211,8 +216,8 @@ export async function listarInventario(): Promise<ProductoAdmin[]> {
   const [{ data: prods, error }, { data: inv, error: e2 }] = await Promise.all([
     supabase
       .from("productos")
-      .select("id, slug, linea, nombre, nombre_base, tamano, categoria_id, precio, costo, descripcion, beneficios, modo_uso, seguridad, cotizar, insignias, tinte, activo, orden")
-      .order("orden"),
+      .select("id, slug, codigo, linea, nombre, nombre_base, tamano, categoria_id, categorias(nombre, corto), precio, costo, descripcion, beneficios, modo_uso, seguridad, cotizar, insignias, tinte, activo, orden")
+      .order("codigo"),
     supabase.rpc("admin_inventario"),
   ]);
   if (error || e2) throw new Error((error ?? e2)!.message);
@@ -237,6 +242,9 @@ export async function listarInventario(): Promise<ProductoAdmin[]> {
   return (prods ?? []).map((p) => ({
     id: p.id,
     slug: p.slug,
+    codigo: p.codigo,
+    categoriaNombre: (p.categorias as unknown as { nombre: string } | null)?.nombre ?? p.categoria_id,
+    categoriaCorto: (p.categorias as unknown as { corto: string } | null)?.corto ?? p.categoria_id,
     linea: p.linea,
     nombre: p.nombre,
     nombreBase: p.nombre_base,
@@ -497,4 +505,18 @@ export async function listarDescuentos(): Promise<CodigoDescuento[]> {
       creadoEn: d.creado_en,
     };
   });
+}
+
+// ---------------------------------------------------------------------------
+// Categorías (0008)
+// ---------------------------------------------------------------------------
+
+export type CategoriaAdmin = Categoria & { productos: number };
+
+/** Todas las categorías (también las ocultas), por número, con cuántos productos tiene cada una. */
+export async function listarCategoriasAdmin(): Promise<CategoriaAdmin[]> {
+  const { supabase } = await exigirAdmin();
+  const { data, error } = await supabase.from("categorias").select("id, numero, nombre, corto, img, tinte, oscura, activo, productos(count)").order("numero");
+  if (error) throw new Error(error.message);
+  return data.map((c) => ({ ...aCategoria(c), productos: (c.productos as unknown as { count: number }[])[0]?.count ?? 0 }));
 }

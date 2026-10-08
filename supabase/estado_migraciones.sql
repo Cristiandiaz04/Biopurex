@@ -41,6 +41,9 @@ from (values
   ('0007_zonas_envio',
     to_regclass('public.municipios') is not null
     and to_regclass('public.ciudades') is not null
-    and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'configuracion' and column_name = 'envio_gratis_desde'))
+    and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'configuracion' and column_name = 'envio_gratis_desde')),
+  ('0008_categorias_codigos',
+    exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'categorias' and column_name = 'numero')
+    and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'productos' and column_name = 'codigo'))
 ) as t(migracion, corrida)
 order by migracion;

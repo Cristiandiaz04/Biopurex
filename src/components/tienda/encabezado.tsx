@@ -5,25 +5,26 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { Package, Search, ShoppingBag, User } from "lucide-react";
-import { categoria, type CategoriaId } from "@/lib/catalogo";
 import { BotonPanel } from "./boton-panel";
 import { useCarrito } from "./carrito-provider";
+import { useCatalogo } from "./catalogo-provider";
 
-const NAV: CategoriaId[] = ["hogar", "lavanderia", "cocina", "auto", "articulos"];
+const NAV = ["hogar", "lavanderia", "cocina", "auto", "articulos"];
 
 function NavCategorias() {
   const pathname = usePathname();
   const sp = useSearchParams();
   const activa = pathname === "/catalogo" ? sp.get("cat") : null;
+  const { categorias } = useCatalogo();
   return (
     <nav aria-label="Categorías" className="hidden items-center gap-1 min-[1180px]:flex">
-      {NAV.map((id) => (
+      {categorias.filter((c) => NAV.includes(c.id)).map(({ id, corto }) => (
         <Link
           key={id}
           href={`/catalogo?cat=${id}`}
           className="relative flex h-11 items-center whitespace-nowrap rounded-sm px-3 text-sm font-semibold text-navy no-underline hover:bg-surface"
         >
-          {categoria(id).corto}
+          {corto}
           <span
             className="absolute inset-x-3 bottom-1.5 h-0.5 rounded-sm bg-green transition-opacity"
             style={{ opacity: activa === id ? 1 : 0 }}

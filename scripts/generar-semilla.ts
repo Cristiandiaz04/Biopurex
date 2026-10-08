@@ -3,7 +3,19 @@
  * Uso: node scripts/generar-semilla.ts   (Node 22+ ejecuta TypeScript directo)
  */
 import { writeFileSync } from "node:fs";
-import { AROMAS, AROMA_IDS, CATEGORIAS, COLOR_AROMA } from "../src/lib/catalogo.ts";
+import { AROMAS, AROMA_IDS, COLOR_AROMA } from "../src/lib/catalogo.ts";
+
+// Categorías iniciales (desde 0008 el admin las maneja en el panel; esto solo genera 0002).
+const CATEGORIAS = [
+  { id: "hogar", nombre: "Limpieza del hogar", corto: "Hogar", img: "des_lav_gal", tinte: "lavanda", oscura: false },
+  { id: "lavanderia", nombre: "Lavandería", corto: "Lavandería", img: "biowash_sweet", tinte: "sweetfusion", oscura: false },
+  { id: "cocina", nombre: "Cocina y manos", corto: "Cocina y manos", img: "manos_cereza", tinte: "cereza", oscura: false },
+  { id: "alimenticio", nombre: "Grado alimenticio", corto: "Grado alimenticio", img: "biodish", tinte: "espuma", oscura: false },
+  { id: "aromatizantes", nombre: "Aromatizantes BIOSCENT", corto: "Aromatizantes", img: "scent_mandarina", tinte: "mandarina", oscura: false },
+  { id: "auto", nombre: "Línea automotriz", corto: "Automotriz", img: "foam_gal", tinte: null, oscura: true },
+  { id: "articulos", nombre: "Artículos de limpieza", corto: "Artículos", img: "escoba", tinte: null, oscura: false },
+  { id: "dispensadores", nombre: "Dispensadores", corto: "Dispensadores", img: "disp_jabon", tinte: null, oscura: false },
+];
 import { construirProductos } from "./semilla/lineas.ts";
 
 const STOCK_INICIAL = 30;

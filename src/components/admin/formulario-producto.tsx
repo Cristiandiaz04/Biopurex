@@ -2,9 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { Plus } from "lucide-react";
 import { guardarProducto, type DatosProducto } from "@/acciones/admin";
 import { MensajeError } from "@/components/ui/campo";
-import { AROMAS, AROMA_IDS, CATEGORIAS, aromaVar } from "@/lib/catalogo";
+import { AROMAS, AROMA_IDS, aromaVar, prefijoCategoria } from "@/lib/catalogo";
+import type { CategoriaAdmin } from "@/lib/datos/admin";
+import { ModalCategoria } from "./categorias";
 import { boton } from "./ui";
 
 const TAMANOS = ["Galón", "Litro", "740 ml", "20 L", "Spray", "Unidad", "Paquete", "Rollo", "Caja"];
@@ -23,7 +26,7 @@ function Etiqueta({ label, error, ayuda, children, className = "" }: { label: st
   );
 }
 
-export function FormularioProducto({ inicial, tieneAromas }: { inicial: DatosProducto; tieneAromas: boolean }) {
+export function FormularioProducto({ inicial, tieneAromas, categorias, codigo }: { inicial: DatosProducto; tieneAromas: boolean; categorias: CategoriaAdmin[]; codigo?: string }) {
   const router = useRouter();
   const [d, setD] = useState(inicial);
   const [otroTamano, setOtroTamano] = useState(!!inicial.tamano && !TAMANOS.includes(inicial.tamano));
@@ -31,7 +34,9 @@ export function FormularioProducto({ inicial, tieneAromas }: { inicial: DatosPro
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [pendiente, iniciar] = useTransition();
+  const [nuevaCat, setNuevaCat] = useState(false);
   const nuevo = !d.id;
+  const catSel = categorias.find((c) => c.id === d.categoria);
 
   const set = <K extends keyof DatosProducto>(k: K, v: DatosProducto[K]) => {
     setD((x) => ({ ...x, [k]: v }));
@@ -85,14 +90,33 @@ export function FormularioProducto({ inicial, tieneAromas }: { inicial: DatosPro
             {otroTamano && <input className={`${entrada} ${borde("tamano")}`} value={d.tamano} onChange={(e) => set("tamano", e.target.value)} placeholder="Ej.: 3.8 L" maxLength={40} />}
           </div>
         </Etiqueta>
-        <Etiqueta label="Categoría" error={errores.categoria}>
-          <select className={`${entrada} ${borde("categoria")} cursor-pointer`} value={d.categoria} onChange={(e) => set("categoria", e.target.value)}>
-            <option value="" disabled>Elige…</option>
-            {CATEGORIAS.map((c) => (
-              <option key={c.id} value={c.id}>{c.nombre}</option>
-            ))}
-          </select>
+        <Etiqueta
+          label="Categoría"
+          error={errores.categoria}
+          ayuda={
+            codigo
+              ? `Código ${codigo}${catSel && !codigo.startsWith(prefijoCategoria(catSel.numero)) ? ` · al guardar recibe un código ${prefijoCategoria(catSel.numero)}xxxx` : ""}`
+              : catSel
+                ? `El código se asigna al guardar: ${prefijoCategoria(catSel.numero)}0001, ${prefijoCategoria(catSel.numero)}0002…`
+                : undefined
+          }
+        >
+          <div className="flex gap-2">
+            <select className={`${entrada} ${borde("categoria")} cursor-pointer`} value={d.categoria} onChange={(e) => set("categoria", e.target.value)}>
+              <option value="" disabled>Elige…</option>
+              {categorias.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {prefijoCategoria(c.numero)} · {c.nombre}
+                  {c.activo ? "" : " (oculta)"}
+                </option>
+              ))}
+            </select>
+            <button type="button" onClick={() => setNuevaCat(true)} title="Nueva categoría" aria-label="Nueva categoría" className="flex size-11 flex-none items-center justify-center rounded-sm shadow-[inset_0_0_0_1.5px_var(--border)] hover:bg-surface">
+              <Plus size={18} aria-hidden />
+            </button>
+          </div>
         </Etiqueta>
+        {nuevaCat && <ModalCategoria cerrar={() => setNuevaCat(false)} alGuardar={(id) => set("categoria", id)} />}
         <div className="grid grid-cols-2 gap-3">
           <Etiqueta label="Precio de venta (L.)" error={errores.precio} ayuda="Incluye ISV.">
             <input className={`${entrada} ${borde("precio")} text-right tabular-nums`} inputMode="decimal" value={d.precio} onChange={(e) => set("precio", e.target.value)} placeholder="0.00" />

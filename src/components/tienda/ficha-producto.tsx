@@ -7,7 +7,6 @@ import { AlertTriangle, Check, Minus, Package, Plus, ShoppingBag, Truck } from "
 import {
   AVISO_SEGURIDAD,
   aromaVar,
-  categoria,
   esMayoreo,
   esOscuro,
   varianteInicial,
@@ -95,7 +94,7 @@ export function FichaProducto({
         <nav aria-label="Ruta" className={`mb-5 flex flex-wrap items-center gap-1.5 text-[13px] ${th.fg2}`}>
           <Link href="/" className="py-1.5 no-underline hover:underline">Inicio</Link>
           <span>/</span>
-          <Link href={`/catalogo?cat=${p.cat}`} className="py-1.5 no-underline hover:underline">{categoria(p.cat).nombre}</Link>
+          <Link href={`/catalogo?cat=${p.cat}`} className="py-1.5 no-underline hover:underline">{p.catNombre}</Link>
           <span>/</span>
           <span className={`font-semibold ${th.fg}`}>{p.nombre}</span>
         </nav>
@@ -133,7 +132,7 @@ export function FichaProducto({
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2.5">
                 <span className="h-[3px] w-8 rounded-sm bg-green" />
-                <span className={`text-[13px] font-semibold uppercase tracking-[.08em] ${th.fg2}`}>{categoria(p.cat).nombre}</span>
+                <span className={`text-[13px] font-semibold uppercase tracking-[.08em] ${th.fg2}`}>{p.catNombre}</span>
               </div>
               <h1 className="font-display text-h2 m-0 leading-[1.02]">{p.nombre}</h1>
               <div className="flex flex-wrap items-center gap-3">

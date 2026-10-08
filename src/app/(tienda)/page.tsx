@@ -3,8 +3,8 @@ import Link from "next/link";
 import { Award, ChevronRight, Leaf, Sparkles, Truck } from "lucide-react";
 import { ProductoEstrella } from "@/components/tienda/inicio/producto-estrella";
 import { TarjetaProducto } from "@/components/tienda/tarjeta-producto";
-import { AROMAS, AROMA_IDS, CATEGORIAS, DESTACADOS, DESTACADOS_AUTO, aromaVar, type Producto } from "@/lib/catalogo";
-import { obtenerProductos } from "@/lib/datos/catalogo";
+import { AROMAS, AROMA_IDS, DESTACADOS, DESTACADOS_AUTO, aromaVar, type Producto } from "@/lib/catalogo";
+import { obtenerCategorias, obtenerProductos } from "@/lib/datos/catalogo";
 
 const BOTELLAS: [string, number, number][] = [
   ["des_cit_lt", 10, 74],
@@ -51,7 +51,7 @@ function VerTodo({ href }: { href: string }) {
 }
 
 export default async function Inicio() {
-  const productos = await obtenerProductos();
+  const [productos, categorias] = await Promise.all([obtenerProductos(), obtenerCategorias()]);
   const porSlug = (s: string) => productos.find((p) => p.slug === s);
   const lista = (slugs: string[]) => slugs.map(porSlug).filter((p): p is Producto => !!p);
   const galon = porSlug("desinfectante-galon");
@@ -168,7 +168,7 @@ export default async function Inicio() {
           <VerTodo href="/catalogo" />
         </div>
         <div className={grid4}>
-          {CATEGORIAS.map((c) => (
+          {categorias.filter((c) => productos.some((p) => p.cat === c.id)).map((c) => (
             <Link
               key={c.id}
               href={`/catalogo?cat=${c.id}`}
@@ -184,7 +184,7 @@ export default async function Inicio() {
                 {productos.filter((p) => p.cat === c.id).length} productos
               </span>
               <div className="drop-product absolute -bottom-[3%] -right-[4%] h-[72%] w-[70%]">
-                <Image src={`/img/${c.img}.webp`} alt="" fill sizes="(max-width: 899px) 30vw, 200px" className="object-contain" />
+                <Image src={c.img ? `/img/${c.img}.webp` : (productos.find((p) => p.cat === c.id)?.variantes[0]?.img ?? "/img/logo.png")} alt="" fill sizes="(max-width: 899px) 30vw, 200px" className="object-contain" />
               </div>
             </Link>
           ))}

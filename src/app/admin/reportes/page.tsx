@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { ControlesReporte, PERIODOS } from "@/components/admin/reportes-controles";
 import { Chip, CHIP_TIPO, nombreAroma, PuntoAroma, td, th, TituloPagina } from "@/components/admin/ui";
-import { aromaVar, categoria, esAroma, esCategoria } from "@/lib/catalogo";
+import { aromaVar, esAroma } from "@/lib/catalogo";
 import { ETIQUETA_TIPO } from "@/lib/datos/admin";
 import { datosReportes } from "@/lib/datos/admin-docs";
 import { lempiras } from "@/lib/formato";
@@ -173,7 +173,7 @@ async function Reportes({ searchParams }: { searchParams: PageProps<"/admin/repo
                   <img src={v.img} alt="" className="size-8 flex-none object-contain" />
                   <div>
                     <div className="font-semibold">{p.nombre}</div>
-                    <div className="flex items-center gap-1.5 text-xs text-text-2"><PuntoAroma aroma={v.aroma} />{v.etiqueta} · {esCategoria(p.categoria) ? categoria(p.categoria).corto : p.categoria}</div>
+                    <div className="flex items-center gap-1.5 text-xs text-text-2"><PuntoAroma aroma={v.aroma} />{v.etiqueta} · {p.categoriaCorto}</div>
                   </div>
                 </div>
               </td>

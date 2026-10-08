@@ -5,14 +5,13 @@ import { ExternalLink, Plus } from "lucide-react";
 import { FormularioProducto } from "@/components/admin/formulario-producto";
 import { GestorVariantes } from "@/components/admin/gestor-variantes";
 import { boton, TituloPagina } from "@/components/admin/ui";
-import { categoria, esCategoria } from "@/lib/catalogo";
-import { kardex, listarInventario } from "@/lib/datos/admin";
+import { kardex, listarCategoriasAdmin, listarInventario } from "@/lib/datos/admin";
 
 export const metadata = { title: "Producto" };
 
 async function Producto({ params, searchParams }: { params: PageProps<"/admin/productos/[slug]">["params"]; searchParams: PageProps<"/admin/productos/[slug]">["searchParams"] }) {
   const [{ slug }, sp] = await Promise.all([params, searchParams]);
-  const todos = await listarInventario();
+  const [todos, categorias] = await Promise.all([listarInventario(), listarCategoriasAdmin()]);
   const p = todos.find((x) => x.slug === slug);
   if (!p) notFound();
   const movimientos = await kardex(p.variantes.map((v) => v.id));
@@ -34,7 +33,7 @@ async function Producto({ params, searchParams }: { params: PageProps<"/admin/pr
         }
         sub={
           <>
-            {esCategoria(p.categoria) ? categoria(p.categoria).nombre : p.categoria} · {p.variantes.length} variantes
+            <span className="font-mono font-bold text-navy">{p.codigo}</span> · {p.categoriaNombre} · {p.variantes.length} variantes
             {hermanos.length > 1 && (
               <>
                 {" · Presentaciones: "}
@@ -74,6 +73,8 @@ async function Producto({ params, searchParams }: { params: PageProps<"/admin/pr
         <FormularioProducto
           key={p.id}
           tieneAromas={p.variantes.some((v) => v.aroma)}
+          categorias={categorias}
+          codigo={p.codigo}
           inicial={{
             id: p.id,
             nombreBase: p.nombreBase,

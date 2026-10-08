@@ -7,13 +7,10 @@ import { Search, SlidersHorizontal, X } from "lucide-react";
 import {
   AROMAS,
   AROMA_IDS,
-  CATEGORIAS,
   TAMANOS_FILTRO,
   aromaVar,
   buscarProductos,
-  categoria,
   type AromaId,
-  type CategoriaId,
 } from "@/lib/catalogo";
 import { TarjetaProducto } from "./tarjeta-producto";
 import { useCatalogo } from "./catalogo-provider";
@@ -25,15 +22,16 @@ export function CatalogoVista() {
   const router = useRouter();
   const pathname = usePathname();
   const [hojaAbierta, setHojaAbierta] = useState(false);
-  const { productos: todos } = useCatalogo();
+  const { productos: todos, categorias, categoria } = useCatalogo();
 
   const catParam = sp.get("cat");
-  const cat = CATEGORIAS.some((c) => c.id === catParam) ? (catParam as CategoriaId) : null;
+  const catSel = categoria(catParam);
+  const cat = catSel?.id ?? null;
   const aromas = lista(sp.get("aroma")).filter((a): a is AromaId => a in AROMAS);
   const tamanos = lista(sp.get("tam")).filter((t) => TAMANOS_FILTRO.includes(t));
   const q = sp.get("q") ?? "";
   const orden = sp.get("orden") ?? "rel";
-  const oscuro = cat === "auto";
+  const oscuro = catSel?.oscura ?? false;
 
   const productos = useMemo(
     () => buscarProductos(todos, { cat, q, aromas, tamanos, orden }),
@@ -67,12 +65,12 @@ export function CatalogoVista() {
   }, [hojaAbierta]);
 
   const activos = [
-    ...(cat ? [{ label: categoria(cat).corto, color: null as string | null, quitar: () => actualizar({ cat: null }) }] : []),
+    ...(cat ? [{ label: catSel!.corto, color: null as string | null, quitar: () => actualizar({ cat: null }) }] : []),
     ...aromas.map((a) => ({ label: AROMAS[a], color: aromaVar(a), quitar: () => actualizar({ aroma: aromas.filter((x) => x !== a) }) })),
     ...tamanos.map((t) => ({ label: t, color: null, quitar: () => actualizar({ tam: tamanos.filter((x) => x !== t) }) })),
   ];
   const nFiltros = aromas.length + tamanos.length + (cat ? 1 : 0);
-  const titulo = cat ? categoria(cat).nombre : q ? `Resultados para “${q}”` : "Todos los productos";
+  const titulo = catSel ? catSel.nombre : q ? `Resultados para “${q}”` : "Todos los productos";
 
   const th = oscuro
     ? { page: "bg-graphite text-white", fg2: "text-on-dark-2", btn: "bg-white text-graphite", chip: "bg-graphite-2 text-white", line: "border-graphite-3", surf: "bg-graphite-2" }
@@ -94,7 +92,7 @@ export function CatalogoVista() {
             Inicio
           </Link>
           <span>/</span>
-          <span className={`font-semibold ${oscuro ? "text-white" : "text-navy"}`}>{cat ? categoria(cat).nombre : "Todos"}</span>
+          <span className={`font-semibold ${oscuro ? "text-white" : "text-navy"}`}>{catSel ? catSel.nombre : "Todos"}</span>
         </nav>
         <div className="mb-5">
           <span className="brand-line mb-3" />
@@ -211,7 +209,7 @@ export function CatalogoVista() {
               <button type="button" aria-pressed={!cat} onClick={() => actualizar({ cat: null })} className={chip(!cat)}>
                 Todos
               </button>
-              {CATEGORIAS.map((c) => (
+              {categorias.map((c) => (
                 <button key={c.id} type="button" aria-pressed={cat === c.id} onClick={() => actualizar({ cat: c.id })} className={chip(cat === c.id)}>
                   {c.corto}
                 </button>

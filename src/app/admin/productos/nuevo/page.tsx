@@ -1,13 +1,12 @@
 import { Suspense } from "react";
 import { FormularioProducto } from "@/components/admin/formulario-producto";
 import { TituloPagina } from "@/components/admin/ui";
-import { exigirAdmin } from "@/lib/datos/admin";
+import { listarCategoriasAdmin } from "@/lib/datos/admin";
 
 export const metadata = { title: "Nuevo producto" };
 
 async function Nuevo({ searchParams }: { searchParams: PageProps<"/admin/productos/nuevo">["searchParams"] }) {
-  await exigirAdmin();
-  const sp = await searchParams;
+  const [sp, categorias] = await Promise.all([searchParams, listarCategoriasAdmin()]);
   const texto = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : "");
   const presentacion = !!texto("linea");
   return (
@@ -20,6 +19,7 @@ async function Nuevo({ searchParams }: { searchParams: PageProps<"/admin/product
       <div className="max-w-[920px]">
         <FormularioProducto
           tieneAromas={false}
+          categorias={categorias}
           inicial={{
             nombreBase: texto("base"),
             linea: texto("linea") || undefined,

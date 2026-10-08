@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
-import { esAroma, esCategoria } from "@/lib/catalogo";
+import { esAroma } from "@/lib/catalogo";
 import { exigirAdmin } from "@/lib/datos/admin";
 
 export type Resultado = { ok?: string; error?: string; errores?: Record<string, string>; slug?: string };
@@ -124,7 +124,7 @@ export async function guardarProducto(d: DatosProducto): Promise<Resultado> {
   const tamano = d.tamano.trim();
   if (nombreBase.length < 3 || nombreBase.length > 120) errores.nombreBase = "Escribe el nombre del producto";
   if (tamano.length < 1 || tamano.length > 40) errores.tamano = "Indica la presentación (Galón, Litro, 740 ml…)";
-  if (!esCategoria(d.categoria)) errores.categoria = "Elige una categoría";
+  if (!/^[a-z0-9-]{1,60}$/.test(d.categoria)) errores.categoria = "Elige una categoría";
   const precio = dinero(d.precio);
   const costo = dinero(d.costo);
   if (precio === "error") errores.precio = "Precio no válido";
@@ -333,4 +333,41 @@ export async function alternarDescuento(id: string, activo: boolean): Promise<Re
   if (error) return fallo("alternarDescuento", error);
   revalidatePath("/admin/descuentos");
   return { ok: activo ? "Código activado" : "Código desactivado" };
+}
+
+// ---------------------------------------------------------------------------
+// Categorías
+// ---------------------------------------------------------------------------
+
+export type DatosCategoria = { id?: string; nombre: string; corto: string; tinte: string; activo: boolean };
+
+/** Crea o edita una categoría. El número (01, 02…) lo asigna la base de datos al crearla. */
+export async function guardarCategoria(d: DatosCategoria): Promise<Resultado & { id?: string }> {
+  const errores: Record<string, string> = {};
+  const nombre = d.nombre.trim();
+  const corto = d.corto.trim() || nombre;
+  if (nombre.length < 2 || nombre.length > 60) errores.nombre = "Escribe el nombre (2 a 60 letras)";
+  if (corto.length > 30) errores.corto = "Máximo 30 letras";
+  if (d.tinte && !esAroma(d.tinte)) errores.tinte = "Color no válido";
+  if (d.id && !/^[a-z0-9-]{1,60}$/.test(d.id)) return { error: "Categoría no válida" };
+  if (Object.keys(errores).length) return { error: "Revisa los campos marcados.", errores };
+
+  const { supabase } = await exigirAdmin();
+  const fila = { nombre, corto, tinte: d.tinte || null, activo: d.activo };
+  if (d.id) {
+    const { error } = await supabase.from("categorias").update(fila).eq("id", d.id);
+    if (error) return fallo("guardarCategoria", error);
+    updateTag("catalogo");
+    return { ok: "Categoría guardada", id: d.id };
+  }
+  // id = slug del nombre; si ya existe se le agrega -2, -3…
+  const base = slugify(nombre) || "categoria";
+  const { data: usados } = await supabase.from("categorias").select("id").like("id", `${base}%`);
+  const ids = new Set((usados ?? []).map((x) => x.id));
+  let id = base;
+  for (let i = 2; ids.has(id); i++) id = `${base}-${i}`;
+  const { error } = await supabase.from("categorias").insert({ id, ...fila });
+  if (error) return fallo("guardarCategoria", error);
+  updateTag("catalogo");
+  return { ok: "Categoría creada", id };
 }

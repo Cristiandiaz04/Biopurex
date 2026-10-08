@@ -1,16 +1,16 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { AlertTriangle, Search } from "lucide-react";
-import { CATEGORIAS, categoria, esCategoria } from "@/lib/catalogo";
-import type { ProductoAdmin } from "@/lib/datos/admin";
+import { prefijoCategoria } from "@/lib/catalogo";
+import type { CategoriaAdmin, ProductoAdmin } from "@/lib/datos/admin";
 import { lempiras } from "@/lib/formato";
 import { Chip, PuntoAroma, td, th, Vacio } from "./ui";
 
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
-export function TablaInventario({ productos }: { productos: ProductoAdmin[] }) {
+export function TablaInventario({ productos, categorias }: { productos: ProductoAdmin[]; categorias: CategoriaAdmin[] }) {
   const router = useRouter();
   const sp = useSearchParams();
   const [modo, setModo] = useState<"productos" | "variantes">(sp.get("vista") === "variantes" ? "variantes" : "productos");
@@ -24,7 +24,7 @@ export function TablaInventario({ productos }: { productos: ProductoAdmin[] }) {
       productos.filter(
         (p) =>
           (!cat || p.categoria === cat) &&
-          (!nq || norm(`${p.nombre} ${p.variantes.map((v) => `${v.etiqueta} ${v.sku}`).join(" ")}`).includes(nq)),
+          (!nq || p.codigo.startsWith(nq) || norm(`${p.nombre} ${p.variantes.map((v) => `${v.etiqueta} ${v.sku}`).join(" ")}`).includes(nq)),
       ),
     [productos, cat, nq],
   );
@@ -32,7 +32,7 @@ export function TablaInventario({ productos }: { productos: ProductoAdmin[] }) {
     () =>
       prods
         .flatMap((p) => p.variantes.map((v) => ({ p, v, disp: v.stock - v.apartado })))
-        .filter((x) => (!bajo || x.disp <= x.v.minimo) && (!nq || norm(`${x.p.nombre} ${x.v.etiqueta} ${x.v.sku}`).includes(nq))),
+        .filter((x) => (!bajo || x.disp <= x.v.minimo) && (!nq || x.p.codigo.startsWith(nq) || norm(`${x.p.nombre} ${x.v.etiqueta} ${x.v.sku}`).includes(nq))),
     [prods, bajo, nq],
   );
 
@@ -53,9 +53,9 @@ export function TablaInventario({ productos }: { productos: ProductoAdmin[] }) {
         <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-4 py-3.5">
           <div className="flex flex-wrap gap-1.5">
             <button type="button" onClick={() => setCat(null)} className={chip(!cat)}>Todas</button>
-            {CATEGORIAS.map((c) => (
+            {categorias.filter((c) => c.productos > 0 || cat === c.id).map((c) => (
               <button key={c.id} type="button" onClick={() => setCat(c.id)} className={chip(cat === c.id)}>
-                {c.corto}
+                <span className="font-mono opacity-70">{prefijoCategoria(c.numero)}</span> {c.corto}
               </button>
             ))}
           </div>
@@ -72,30 +72,42 @@ export function TablaInventario({ productos }: { productos: ProductoAdmin[] }) {
           )}
           <label className="ml-auto flex h-10 min-w-[200px] max-w-[340px] flex-1 items-center gap-2 rounded-full bg-surface px-3.5 text-text-2 shadow-[inset_0_0_0_1px_var(--border)]">
             <Search size={16} aria-hidden />
-            <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Producto, aroma o SKU" aria-label="Buscar productos" className="min-w-0 flex-1 bg-transparent text-sm text-navy outline-none" />
+            <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Código, producto, aroma o SKU" aria-label="Buscar productos" className="min-w-0 flex-1 bg-transparent text-sm text-navy outline-none" />
           </label>
         </div>
 
         {vacio ? (
-          <Vacio titulo="Nada coincide con estos filtros" texto="Prueba otra categoría, aroma o SKU.">
+          <Vacio titulo="Nada coincide con estos filtros" texto="Prueba otra categoría, código, aroma o SKU.">
             <button type="button" onClick={() => { setCat(null); setQ(""); setBajo(false); }} className="h-10 rounded-full bg-navy px-[18px] text-sm font-semibold text-white">
               Limpiar filtros
             </button>
           </Vacio>
         ) : modo === "productos" ? (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] border-collapse">
+            <table className="w-full min-w-[940px] border-collapse">
               <thead>
-                <tr><th className={th}>Producto</th><th className={th}>Aromas</th><th className={`${th} text-right`}>Precio</th><th className={`${th} text-right`}>Existencia</th><th className={`${th} text-right`}>Apartado</th><th className={th}>Alertas</th></tr>
+                <tr><th className={th}>Código</th><th className={th}>Producto</th><th className={th}>Aromas</th><th className={`${th} text-right`}>Precio</th><th className={`${th} text-right`}>Existencia</th><th className={`${th} text-right`}>Apartado</th><th className={th}>Alertas</th></tr>
               </thead>
               <tbody>
-                {prods.map((p) => {
+                {prods.map((p, i) => {
+                  const nuevaCat = i === 0 || prods[i - 1].categoria !== p.categoria;
+                  const c = categorias.find((x) => x.id === p.categoria);
                   const ex = p.variantes.reduce((s, v) => s + v.stock, 0);
                   const ap = p.variantes.reduce((s, v) => s + v.apartado, 0);
                   const bajos = p.variantes.filter((v) => v.activo && v.stock - v.apartado <= v.minimo).length;
                   const aromas = p.variantes.filter((v) => v.aroma);
                   return (
-                    <tr key={p.id} onClick={() => router.push(`/admin/productos/${p.slug}`)} className="cursor-pointer hover:bg-surface">
+                    <Fragment key={p.id}>
+                    {nuevaCat && (
+                      <tr>
+                        <td colSpan={7} className="border-b border-line bg-navy-50 px-4 py-2 text-[13px] font-bold">
+                          <span className="font-mono">{c ? prefijoCategoria(c.numero) : ""}</span> · {p.categoriaNombre}
+                          <span className="ml-2 font-normal text-text-2">{prods.filter((x) => x.categoria === p.categoria).length} productos</span>
+                        </td>
+                      </tr>
+                    )}
+                    <tr onClick={() => router.push(`/admin/productos/${p.slug}`)} className="cursor-pointer hover:bg-surface">
+                      <td className={`${td} font-mono text-[13px] font-bold`}>{p.codigo}</td>
                       <td className={td}>
                         <div className="flex items-center gap-3">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -106,7 +118,7 @@ export function TablaInventario({ productos }: { productos: ProductoAdmin[] }) {
                               {!p.activo && <Chip chico className="ml-2 bg-surface text-text-2">Oculto</Chip>}
                             </div>
                             <div className="text-xs text-text-2">
-                              {esCategoria(p.categoria) ? categoria(p.categoria).nombre : p.categoria} · {p.variantes.length} {p.variantes.length === 1 ? "variante" : "variantes"}
+                              {p.tamano} · {p.variantes.length} {p.variantes.length === 1 ? "variante" : "variantes"}
                             </div>
                           </div>
                         </div>
@@ -127,6 +139,7 @@ export function TablaInventario({ productos }: { productos: ProductoAdmin[] }) {
                       <td className={`${td} text-right tabular-nums text-warning`}>{ap}</td>
                       <td className={td}>{bajos > 0 && <Chip className="bg-error-50 text-error">{bajos} con stock bajo</Chip>}</td>
                     </tr>
+                    </Fragment>
                   );
                 })}
               </tbody>
@@ -146,7 +159,7 @@ export function TablaInventario({ productos }: { productos: ProductoAdmin[] }) {
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={v.img} alt="" className="size-9 flex-none object-contain" />
                         <div>
-                          <div className="font-semibold">{p.nombre}</div>
+                          <div className="font-semibold"><span className="mr-1.5 font-mono text-[13px] text-text-2">{p.codigo}</span>{p.nombre}</div>
                           <div className="flex items-center gap-1.5 text-xs text-text-2"><PuntoAroma aroma={v.aroma} />{v.etiqueta}</div>
                         </div>
                       </div>

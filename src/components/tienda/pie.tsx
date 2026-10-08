@@ -1,13 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { AtSign, Mail, MapPin, Phone } from "lucide-react";
-import { categoria, type CategoriaId } from "@/lib/catalogo";
+import type { Categoria } from "@/lib/catalogo";
 
-const NAV: CategoriaId[] = ["hogar", "lavanderia", "cocina", "auto", "articulos"];
+// Categorías principales del pie; las que el admin cree después se ven en el catálogo.
+const NAV = ["hogar", "lavanderia", "cocina", "auto", "articulos"];
 const titulo = "mb-1.5 text-xs font-bold uppercase tracking-[.08em] text-text-2";
 const enlace = "flex min-h-10 items-center gap-2.5 text-sm no-underline hover:underline";
 
-export function Pie() {
+export function Pie({ categorias }: { categorias: Categoria[] }) {
   return (
     <footer className="border-t border-line bg-surface">
       <div className="mx-auto grid max-w-[1280px] grid-cols-2 gap-x-6 gap-y-8 px-[clamp(16px,3vw,40px)] pb-6 pt-[clamp(40px,5vw,64px)] min-[900px]:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))]">
@@ -19,9 +20,9 @@ export function Pie() {
         </div>
         <div className="flex flex-col">
           <div className={titulo}>Tienda</div>
-          {NAV.map((id) => (
-            <Link key={id} href={`/catalogo?cat=${id}`} className={enlace}>
-              {categoria(id).corto}
+          {categorias.filter((c) => NAV.includes(c.id)).map((c) => (
+            <Link key={c.id} href={`/catalogo?cat=${c.id}`} className={enlace}>
+              {c.corto}
             </Link>
           ))}
         </div>

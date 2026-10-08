@@ -1,5 +1,5 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { esAroma, esCategoria, type AromaId, type Insignia, type Producto } from "@/lib/catalogo";
+import { esAroma, type AromaId, type Categoria, type Insignia, type Producto } from "@/lib/catalogo";
 import { clientePublico } from "@/lib/supabase/publico";
 import { zonasActivas, type Municipio, type ZonasEnvio } from "@/lib/envio";
 
@@ -16,6 +16,8 @@ type FilaVariante = {
 
 type FilaProducto = {
   slug: string;
+  codigo: string;
+  categorias: { nombre: string; oscura: boolean } | null;
   linea: string;
   nombre: string;
   nombre_base: string;
@@ -34,7 +36,6 @@ type FilaProducto = {
 };
 
 function aProducto(f: FilaProducto): Producto | null {
-  if (!esCategoria(f.categoria_id)) return null;
   const variantes = f.variantes
     .filter((v) => v.activo)
     .sort((a, b) => a.orden - b.orden)
@@ -49,11 +50,14 @@ function aProducto(f: FilaProducto): Producto | null {
   if (!variantes.length) return null;
   return {
     slug: f.slug,
+    codigo: f.codigo ?? "",
     lineaId: f.linea,
     nombre: f.nombre,
     nombreBase: f.nombre_base,
     tamano: f.tamano,
     cat: f.categoria_id,
+    catNombre: f.categorias?.nombre ?? "",
+    oscuro: f.categorias?.oscura ?? false,
     precio: f.precio == null ? null : Number(f.precio),
     desc: f.descripcion,
     beneficios: f.beneficios,
@@ -77,22 +81,50 @@ export async function obtenerProductos(): Promise<Producto[]> {
   cacheLife("minutes");
   cacheTag("catalogo");
 
-  const { data, error } = await clientePublico()
-    .from("productos")
-    .select(
-      "slug, linea, nombre, nombre_base, tamano, categoria_id, precio, descripcion, beneficios, modo_uso, seguridad, cotizar, insignias, tinte, notas, variantes(id, clave, aroma_id, etiqueta, img, disponible, activo, orden)",
-    )
-    .eq("activo", true)
-    .order("orden");
+  const columnas = (codigo: string) =>
+    `slug, ${codigo}linea, nombre, nombre_base, tamano, categoria_id, categorias(nombre, oscura), precio, descripcion, beneficios, modo_uso, seguridad, cotizar, insignias, tinte, notas, variantes(id, clave, aroma_id, etiqueta, img, disponible, activo, orden)`;
+  const consulta = (codigo: string) => clientePublico().from("productos").select(columnas(codigo)).eq("activo", true).order("orden");
+  let { data, error } = await consulta("codigo, ");
+  // Sin la migración 0008 todavía no existe productos.codigo: la tienda sigue funcionando sin código.
+  if (error?.code === "42703") ({ data, error } = await consulta(""));
   if (error) throw new Error(`No se pudo cargar el catálogo: ${error.message}`);
 
-  const productos = (data as FilaProducto[]).map(aProducto).filter((p): p is Producto => !!p);
+  const productos = (data as unknown as FilaProducto[]).map(aProducto).filter((p): p is Producto => !!p);
   // Hermanos = otros tamaños de la misma línea, en el orden del catálogo.
   for (const p of productos) {
     p.hermanos = productos.filter((x) => x.lineaId === p.lineaId).map((x) => ({ slug: x.slug, tamano: x.tamano }));
   }
   return productos;
 }
+
+/** Categorías activas, en el orden de la tienda. Misma caché que el catálogo. */
+export async function obtenerCategorias(): Promise<Categoria[]> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("catalogo");
+
+  const sb = clientePublico();
+  let { data, error } = await sb.from("categorias").select("id, numero, nombre, corto, img, tinte, oscura, activo").eq("activo", true).order("orden");
+  // Sin la migración 0008 (numero, activo): se numeran por orden.
+  if (error?.code === "42703") {
+    const r = await sb.from("categorias").select("id, nombre, corto, img, tinte, oscura").order("orden");
+    error = r.error;
+    data = (r.data ?? []).map((c, i) => ({ ...c, numero: i + 1, activo: true }));
+  }
+  if (error) throw new Error(`No se pudieron cargar las categorías: ${error.message}`);
+  return (data ?? []).map(aCategoria);
+}
+
+export const aCategoria = (c: Record<string, unknown>): Categoria => ({
+  id: c.id as string,
+  numero: Number(c.numero),
+  nombre: c.nombre as string,
+  corto: c.corto as string,
+  img: (c.img as string) || null,
+  tinte: esAroma(c.tinte) ? c.tinte : null,
+  oscura: Boolean(c.oscura),
+  activo: c.activo !== false,
+});
 
 export type Configuracion = {
   banco: string;

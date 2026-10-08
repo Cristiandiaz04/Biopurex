@@ -42,7 +42,7 @@ for (const archivo of readdirSync(dir).filter((x) => x.endsWith(".sql")).sort())
 }
 // Las migraciones idempotentes se pueden volver a correr (p. ej. si Supabase cortó por un bloqueo).
 // (en orden: 0007 redefine _crear_pedido de 0005)
-for (const archivo of ["0005_compras_cotizaciones_facturas.sql", "0006_materia_prima_produccion.sql", "0007_zonas_envio.sql"]) {
+for (const archivo of ["0005_compras_cotizaciones_facturas.sql", "0006_materia_prima_produccion.sql", "0007_zonas_envio.sql", "0008_categorias_codigos.sql"]) {
   await run(readFileSync(dir + "/" + archivo, "utf8"));
   ok(true, archivo + " se puede volver a correr");
 }
@@ -224,6 +224,22 @@ ok(Number(pg.envio) === 0 && Number(pg.total) === Number(pg.subtotal), "compra m
 await como(AD, () => q("update public.municipios set activo = false where id = $1", [mDC]));
 ok((await como(U1, () => q("select count(*)::int n from public.municipios")))[0].n === 1, "el cliente solo ve municipios activos");
 try { await como(U2, () => q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb)", [items([[vLav, 1]]), contacto, JSON.stringify({ departamento: "Francisco Morazán", municipio: "Distrito Central", ciudad: "Tegucigalpa", colonia: "Centro", direccion: "Ave. Cervantes" })])); ok(false, "municipio inactivo"); } catch { ok(true, "un municipio desactivado ya no recibe pedidos"); }
+
+// ---- 0008: categorías y códigos de producto ----
+const codP = async (slug) => (await q("select codigo from public.productos where slug=$1", [slug]))[0].codigo;
+ok(await codP("desinfectante-galon") === "010001", "el primer producto de la categoría 01 es 010001");
+ok((await q("select count(*)::int n from public.productos where codigo is null"))[0].n === 0 && (await q("select count(distinct codigo)::int n, count(*)::int t from public.productos"))[0].n === (await q("select count(*)::int t from public.productos"))[0].t, "todos los productos tienen código único");
+ok(/^01[0-9]{4}$/.test(await codP("limpia-pisos-galon")), "un producto nuevo recibe el siguiente código de su categoría");
+await como(AD, () => q("insert into public.categorias (id, nombre, corto) values ('industrial', 'Línea industrial', 'Industrial')"));
+const numInd = (await q("select numero from public.categorias where id='industrial'"))[0].numero;
+ok(numInd === 9, "la categoría nueva recibe el número 09");
+await como(AD, () => q("insert into public.productos (slug, linea, nombre, nombre_base, tamano, categoria_id, precio) values ('ind-1','ind','Ind 1','Ind','Galón','industrial',10), ('ind-2','ind','Ind 2','Ind','Litro','industrial',5)"));
+ok(await codP("ind-1") === "090001" && await codP("ind-2") === "090002", "correlativo dentro de la categoría: 090001, 090002");
+await como(AD, () => q("update public.productos set categoria_id='hogar' where slug='ind-2'"));
+ok((await codP("ind-2")).startsWith("01"), "al cambiar de categoría recibe código de la nueva");
+await como(AD, () => q("update public.productos set codigo='999999', precio=11 where slug='ind-1'"));
+ok(await codP("ind-1") === "090001", "el código no se cambia a mano");
+try { await como(U1, () => q("insert into public.categorias (id, nombre, corto) values ('x','X','X')")); ok(false, "cliente creó categoría"); } catch { ok(true, "un cliente no puede crear categorías"); }
 
 console.log(fallas ? `\n${fallas} FALLAS` : "\nTodo OK");
 await db.close();
