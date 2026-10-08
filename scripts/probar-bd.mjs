@@ -40,6 +40,11 @@ for (const archivo of readdirSync(dir).filter((x) => x.endsWith(".sql")).sort())
   await run(sql);
   ok(true, archivo + " corre sin errores");
 }
+// Las migraciones idempotentes se pueden volver a correr (p. ej. si Supabase cortó por un bloqueo).
+for (const archivo of ["0005_compras_cotizaciones_facturas.sql"]) {
+  await run(readFileSync(dir + "/" + archivo, "utf8"));
+  ok(true, archivo + " se puede volver a correr");
+}
 ok((await q("select count(*)::int n from public.productos"))[0].n === 43, "43 productos");
 
 const U1 = "11111111-1111-1111-1111-111111111111", U2 = "22222222-2222-2222-2222-222222222222", AD = "33333333-3333-3333-3333-333333333333";

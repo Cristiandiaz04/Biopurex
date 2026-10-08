@@ -6,7 +6,10 @@
 -- - Cotizaciones imprimibles que se convierten en pedido aplicando la regla del cliente.
 -- - Facturas SIN CAI (decisión de Cristian): numeración interna FAC-000001, RTN, ISV 15 %.
 -- Ejecutar DESPUÉS de 0004. Verificar con supabase/estado_migraciones.sql.
+-- Se puede volver a correr sin problema (es idempotente).
 -- ============================================================
+
+set lock_timeout = '10s';
 
 -- ------------------------------------------------------------
 -- 1. DATOS DE LA EMPRESA (valores de ejemplo: cámbialos en el panel → Configuración)
@@ -21,7 +24,7 @@ alter table public.configuracion
 -- ------------------------------------------------------------
 -- 2. PROVEEDORES Y COMPRAS
 -- ------------------------------------------------------------
-create table public.proveedores (
+create table if not exists public.proveedores (
   id uuid primary key default gen_random_uuid(),
   nombre text not null check (char_length(nombre) between 2 and 120),
   rtn text check (rtn is null or rtn ~ '^[0-9]{14}$'),
@@ -35,9 +38,9 @@ create table public.proveedores (
   creado_en timestamptz not null default now()
 );
 
-create sequence public.compras_numero_seq start 1;
+create sequence if not exists public.compras_numero_seq start 1;
 
-create table public.compras (
+create table if not exists public.compras (
   id uuid primary key default gen_random_uuid(),
   numero bigint not null unique default nextval('public.compras_numero_seq'),
   codigo text generated always as ('CMP-' || lpad(numero::text, 4, '0')) stored,
@@ -50,7 +53,7 @@ create table public.compras (
   recibida_en timestamptz
 );
 
-create table public.compra_items (
+create table if not exists public.compra_items (
   id uuid primary key default gen_random_uuid(),
   compra_id uuid not null references public.compras (id) on delete cascade,
   variante_id uuid not null references public.variantes (id),
@@ -59,15 +62,18 @@ create table public.compra_items (
   total numeric(12, 2) generated always as (cantidad * costo_unitario) stored
 );
 
-create index compra_items_compra_idx on public.compra_items (compra_id);
+create index if not exists compra_items_compra_idx on public.compra_items (compra_id);
 
 alter table public.proveedores enable row level security;
 alter table public.compras enable row level security;
 alter table public.compra_items enable row level security;
+drop policy if exists proveedores_admin on public.proveedores;
 create policy proveedores_admin on public.proveedores for all to authenticated
   using ((select public.es_admin())) with check ((select public.es_admin()));
+drop policy if exists compras_admin on public.compras;
 create policy compras_admin on public.compras for all to authenticated
   using ((select public.es_admin())) with check ((select public.es_admin()));
+drop policy if exists compra_items_admin on public.compra_items;
 create policy compra_items_admin on public.compra_items for all to authenticated
   using ((select public.es_admin())) with check ((select public.es_admin()));
 
@@ -101,8 +107,10 @@ begin
 end;
 $$;
 
+drop trigger if exists trg_proteger_compra on public.compras;
 create trigger trg_proteger_compra before update or delete on public.compras
   for each row execute function public.proteger_compra();
+drop trigger if exists trg_proteger_compra_items on public.compra_items;
 create trigger trg_proteger_compra_items before insert or update or delete on public.compra_items
   for each row execute function public.proteger_compra_items();
 
@@ -297,9 +305,9 @@ grant execute on function public.crear_pedido(jsonb, jsonb, jsonb, boolean, text
 -- ------------------------------------------------------------
 -- 4. COTIZACIONES
 -- ------------------------------------------------------------
-create sequence public.cotizaciones_numero_seq start 1;
+create sequence if not exists public.cotizaciones_numero_seq start 1;
 
-create table public.cotizaciones (
+create table if not exists public.cotizaciones (
   id uuid primary key default gen_random_uuid(),
   numero bigint not null unique default nextval('public.cotizaciones_numero_seq'),
   codigo text generated always as ('COT-' || lpad(numero::text, 4, '0')) stored,
@@ -313,7 +321,7 @@ create table public.cotizaciones (
   creado_en timestamptz not null default now()
 );
 
-create table public.cotizacion_items (
+create table if not exists public.cotizacion_items (
   id uuid primary key default gen_random_uuid(),
   cotizacion_id uuid not null references public.cotizaciones (id) on delete cascade,
   variante_id uuid not null references public.variantes (id),
@@ -324,12 +332,14 @@ create table public.cotizacion_items (
   total numeric(12, 2) generated always as (cantidad * precio_unitario) stored
 );
 
-create index cotizacion_items_idx on public.cotizacion_items (cotizacion_id);
+create index if not exists cotizacion_items_idx on public.cotizacion_items (cotizacion_id);
 
 alter table public.cotizaciones enable row level security;
 alter table public.cotizacion_items enable row level security;
+drop policy if exists cotizaciones_admin on public.cotizaciones;
 create policy cotizaciones_admin on public.cotizaciones for all to authenticated
   using ((select public.es_admin())) with check ((select public.es_admin()));
+drop policy if exists cotizacion_items_admin on public.cotizacion_items;
 create policy cotizacion_items_admin on public.cotizacion_items for all to authenticated
   using ((select public.es_admin())) with check ((select public.es_admin()));
 
@@ -381,9 +391,9 @@ grant execute on function public.admin_convertir_cotizacion(uuid) to authenticat
 -- ------------------------------------------------------------
 -- 5. FACTURAS (sin CAI)
 -- ------------------------------------------------------------
-create sequence public.facturas_numero_seq start 1;
+create sequence if not exists public.facturas_numero_seq start 1;
 
-create table public.facturas (
+create table if not exists public.facturas (
   id uuid primary key default gen_random_uuid(),
   numero bigint not null unique default nextval('public.facturas_numero_seq'),
   codigo text generated always as ('FAC-' || lpad(numero::text, 6, '0')) stored,
@@ -407,9 +417,10 @@ create table public.facturas (
 );
 
 -- Un pedido tiene a lo sumo una factura vigente.
-create unique index facturas_pedido_vigente on public.facturas (pedido_id) where estado = 'emitida';
+create unique index if not exists facturas_pedido_vigente on public.facturas (pedido_id) where estado = 'emitida';
 
 alter table public.facturas enable row level security;
+drop policy if exists facturas_select on public.facturas;
 create policy facturas_select on public.facturas for select to authenticated
   using (cliente_id = (select auth.uid()) or (select public.es_admin()));
 
