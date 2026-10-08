@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { MapPin, Plus } from "lucide-react";
-import { eliminarDireccion, guardarDireccion } from "@/app/cuenta/acciones";
+import { eliminarDireccion, guardarDireccion } from "@/acciones/cuenta";
 import { Campo, MensajeError, Selector } from "@/components/ui/campo";
 import type { Direccion } from "@/lib/datos/cuenta";
 import { DEPARTAMENTOS, formatoTelefono } from "@/lib/validacion";

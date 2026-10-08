@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useActionState, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
-import { iniciarSesion, registrarse, type EstadoAcceso } from "@/app/ingresar/acciones";
+import { iniciarSesion, registrarse, type EstadoAcceso } from "@/acciones/acceso";
 import { Campo, MensajeError } from "@/components/ui/campo";
 
 const INICIAL: EstadoAcceso = {};

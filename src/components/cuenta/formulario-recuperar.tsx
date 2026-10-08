@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { CheckCircle2 } from "lucide-react";
-import { recuperarContrasena, type EstadoAcceso } from "@/app/ingresar/acciones";
+import { recuperarContrasena, type EstadoAcceso } from "@/acciones/acceso";
 import { Campo } from "@/components/ui/campo";
 
 export function FormularioRecuperar() {

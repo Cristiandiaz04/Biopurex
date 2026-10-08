@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Upload } from "lucide-react";
-import { registrarComprobante } from "@/app/pedidos/acciones";
+import { registrarComprobante } from "@/acciones/pedidos";
 import { MensajeError } from "@/components/ui/campo";
 import { createClient } from "@/lib/supabase/client";
 

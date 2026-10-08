@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { KeyRound, LogOut, MapPin, Package, User } from "lucide-react";
-import { cerrarSesion } from "@/app/ingresar/acciones";
+import { cerrarSesion } from "@/acciones/acceso";
 import type { Perfil } from "@/lib/datos/cuenta";
 
 const MENU = [

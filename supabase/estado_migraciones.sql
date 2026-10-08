@@ -19,6 +19,11 @@ from (values
   ('0002_catalogo_inicial',
     to_regclass('public.productos') is not null
     and (select count(*) from public.productos) > 0
-    and exists (select 1 from public.configuracion))
+    and exists (select 1 from public.configuracion)),
+  ('0003_panel_admin',
+    exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'productos' and column_name = 'costo')
+    and exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                where n.nspname = 'public' and p.proname = 'admin_ajustar_stock')
+    and exists (select 1 from storage.buckets where id = 'productos'))
 ) as t(migracion, corrida)
 order by migracion;

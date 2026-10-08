@@ -4,7 +4,7 @@
  * Uso: npm run test:bd
  */
 import { PGlite } from "@electric-sql/pglite";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 const dir = fileURLToPath(new URL("../supabase/migrations", import.meta.url));
 const db = new PGlite();
@@ -32,10 +32,14 @@ grant all on storage.objects to authenticated;
 create function storage.foldername(name text) returns text[] language sql as $$ select (string_to_array(name,'/'))[1:array_length(string_to_array(name,'/'),1)-1] $$;
 grant execute on function storage.foldername(text) to authenticated;
 `);
-let m1 = readFileSync(dir + "/0001_esquema_inicial.sql", "utf8");
-try { await run("create publication supabase_realtime;"); } catch { m1 = m1.replace(/alter publication supabase_realtime[^;]*;/, "-- omitida"); console.log("aviso: publicación omitida en PGlite"); }
-await run(m1); ok(true, "0001 corre sin errores");
-await run(readFileSync(dir + "/0002_catalogo_inicial.sql", "utf8")); ok(true, "0002 corre sin errores");
+let conPublicacion = true;
+try { await run("create publication supabase_realtime;"); } catch { conPublicacion = false; console.log("aviso: publicación omitida en PGlite"); }
+for (const archivo of readdirSync(dir).filter((x) => x.endsWith(".sql")).sort()) {
+  let sql = readFileSync(dir + "/" + archivo, "utf8");
+  if (!conPublicacion) sql = sql.replace(/alter publication supabase_realtime[^;]*;/g, "-- omitida");
+  await run(sql);
+  ok(true, archivo + " corre sin errores");
+}
 ok((await q("select count(*)::int n from public.productos"))[0].n === 43, "43 productos");
 
 const U1 = "11111111-1111-1111-1111-111111111111", U2 = "22222222-2222-2222-2222-222222222222", AD = "33333333-3333-3333-3333-333333333333";
@@ -90,6 +94,21 @@ ok(Number((await q("select saldo from public.perfiles where id=$1", [U2]))[0].sa
 await como(AD, () => q("select public.admin_cancelar_pedido($1,'Cliente lo pidió')", [p.id]));
 ok(Number((await q("select saldo from public.perfiles where id=$1", [U2]))[0].saldo) === 0, "cancelar un pedido a crédito resta el saldo");
 ok((await q("select stock from public.variantes where id=$1", [vLav]))[0].stock === 28, "cancelar devuelve el stock");
+
+// ---- 0003: panel admin ----
+ok((await q("select count(*)::int n from public.movimientos_inventario where documento = 'Saldo inicial'"))[0].n > 0, "kardex con saldo inicial");
+const inv = await como(AD, () => q("select stock from public.admin_inventario() where id = $1", [vLav]));
+ok(inv[0].stock === 28, "el admin ve el stock con admin_inventario()");
+try { await como(U1, () => q("select * from public.admin_inventario()")); ok(false, "cliente vio inventario"); } catch { ok(true, "un cliente no puede ver el inventario"); }
+const nuevo = await como(AD, async () => (await q("insert into public.productos (slug, linea, nombre, nombre_base, tamano, categoria_id, precio) values ('limpia-pisos-galon', 'limpia-pisos', 'Limpia Pisos Galón', 'Limpia Pisos', 'Galón', 'hogar', 99) returning id"))[0].id);
+ok(!!nuevo, "el admin crea un producto");
+const vn = await como(AD, async () => (await q("insert into public.variantes (producto_id, clave, aroma_id, etiqueta, img, sku) values ($1, 'lavanda', 'lavanda', 'Lavanda', '/img/x.webp', 'LIMPIA-PISOS-GALON-LAVANDA') returning id", [nuevo]))[0].id);
+ok(!!vn, "el admin crea una variante (aroma)");
+try { await como(AD, () => q("update public.variantes set stock = 999 where id = $1", [vn])); ok(false, "stock editado a mano"); } catch { ok(true, "el stock no se puede editar a mano (solo con ajuste)"); }
+await como(AD, () => q("select public.admin_ajustar_stock($1, 24, 'Saldo inicial')", [vn]));
+ok((await q("select stock from public.variantes where id=$1", [vn]))[0].stock === 24, "ajuste de stock +24 con kardex");
+try { await como(AD, () => q("select public.admin_ajustar_stock($1, -30, 'merma')", [vn])); ok(false, "stock negativo"); } catch (e) { ok(/negativo/.test(e.message), "el ajuste no deja stock negativo"); }
+try { await como(U1, () => q("insert into public.productos (slug, linea, nombre, nombre_base, tamano, categoria_id) values ('x','x','x','x','x','hogar')")); ok(false, "cliente creó producto"); } catch { ok(true, "un cliente no puede crear productos"); }
 
 console.log(fallas ? `\n${fallas} FALLAS` : "\nTodo OK");
 await db.close();

@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { AlertTriangle, ChevronLeft, Copy, Check, MapPin } from "lucide-react";
-import { crearPedido } from "@/app/checkout/acciones";
+import { crearPedido } from "@/acciones/checkout";
 import { Campo, MensajeError, Selector } from "@/components/ui/campo";
 import { AROMAS, aromaVar } from "@/lib/catalogo";
 import type { Configuracion } from "@/lib/datos/catalogo";

@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { CheckCircle2 } from "lucide-react";
-import { cambiarContrasena, guardarDatos, type ResultadoForm } from "@/app/cuenta/acciones";
+import { cambiarContrasena, guardarDatos, type ResultadoForm } from "@/acciones/cuenta";
 import { Campo, MensajeError } from "@/components/ui/campo";
 import type { Perfil } from "@/lib/datos/cuenta";
 import { formatoTelefono } from "@/lib/validacion";

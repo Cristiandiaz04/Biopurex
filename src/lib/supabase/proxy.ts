@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /** Rutas que piden sesión. El resto de la tienda es pública. */
-const PRIVADAS = ["/checkout", "/pedidos", "/cuenta"];
+const PRIVADAS = ["/checkout", "/pedidos", "/cuenta", "/admin"];
 
 export async function actualizarSesion(request: NextRequest) {
   let response = NextResponse.next({ request });
