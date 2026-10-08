@@ -14,7 +14,7 @@ async function Reglas() {
       <TituloPagina
         volver={{ href: "/admin/produccion", label: "Producción" }}
         titulo="Reglas de creación"
-        sub="Qué materia prima lleva cada producto y cuánto rinde un lote. Los artículos que se compran hechos (escobas, dispensadores) no necesitan regla."
+        sub="Qué materia prima lleva una producción de cada producto y cuántas unidades salen. Los artículos que se compran hechos (escobas, dispensadores) no necesitan regla."
       >
         <Link href="/admin/produccion" className={`${boton.primario} no-underline`}>
           <Factory size={16} aria-hidden />

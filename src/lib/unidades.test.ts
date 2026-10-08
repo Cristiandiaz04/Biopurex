@@ -22,6 +22,11 @@ describe("calcularProduccion", () => {
     expect(calcularProduccion(receta, 1, materias).maximo).toBe(40);
   });
 
+  it("producciones completas posibles: la base alcanza para 10 (20 kg ÷ 2 kg)", () => {
+    expect(calcularProduccion(receta, 4, materias).maximoLotes).toBe(10);
+    expect(calcularProduccion({ rendimiento: 20, ingredientes: [{ materiaId: "aro", cantidad: 3 }] }, 20, materias).maximoLotes).toBe(3);
+  });
+
   it("marca lo que falta", () => {
     const r = calcularProduccion(receta, 100, materias);
     expect(r.faltantes.map((f) => f.materiaId)).toEqual(["base", "aro"]);

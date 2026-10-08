@@ -49,9 +49,14 @@ export function calcularProduccion(receta: RecetaCalc, unidades: number, materia
         ),
       )
     : 0;
+  // Producciones completas (lotes de la regla) que alcanza el stock actual.
+  const maximoLotes = receta.ingredientes.length
+    ? Math.floor(Math.min(...receta.ingredientes.map((i) => (porId.get(i.materiaId)?.stock ?? 0) / i.cantidad + 1e-9)))
+    : 0;
   return {
     lineas,
     faltantes: lineas.filter((l) => l.falta),
+    maximoLotes,
     costoTotal: Math.round(costoTotal * 100) / 100,
     costoUnitario: sinCosto || unidades < 1 ? null : Math.round((costoTotal / unidades) * 100) / 100,
     sinCosto,

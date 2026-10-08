@@ -48,7 +48,7 @@ export function TablaReglas({ variantes, recetas, materias }: { variantes: Varia
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] border-collapse">
-            <thead><tr><th className={th}>Producto · aroma</th><th className={th}>Regla</th><th className={`${th} text-right`}>Rinde por lote</th><th className={`${th} text-right`}>Costo por unidad</th><th className={`${th} text-right`}>Se pueden hacer</th></tr></thead>
+            <thead><tr><th className={th}>Producto · aroma</th><th className={th}>Regla</th><th className={`${th} text-right`}>Sale por producción</th><th className={`${th} text-right`}>Costo por unidad</th><th className={`${th} text-right`}>Producciones posibles</th></tr></thead>
             <tbody>
               {lista.map((v) => {
                 const r = porVariante.get(v.id);
@@ -66,9 +66,9 @@ export function TablaReglas({ variantes, recetas, materias }: { variantes: Varia
                       </div>
                     </td>
                     <td className={td}>{r ? <Chip className="bg-success-50 text-success">{r.ingredientes.length} materias</Chip> : <Chip className="bg-surface text-text-2">Sin regla</Chip>}</td>
-                    <td className={`${td} text-right tabular-nums`}>{r ? r.rendimiento.toLocaleString("en-US") : "—"}</td>
+                    <td className={`${td} text-right tabular-nums`}>{r ? `${r.rendimiento.toLocaleString("en-US")} u.` : "—"}</td>
                     <td className={`${td} whitespace-nowrap text-right tabular-nums`}>{calc ? (calc.sinCosto ? <span className="text-warning">Falta costo</span> : lempiras(calc.costoTotal / r!.rendimiento)) : "—"}</td>
-                    <td className={`${td} text-right font-semibold tabular-nums`}>{calc ? calc.maximo : "—"}</td>
+                    <td className={`${td} text-right font-semibold tabular-nums`}>{calc ? calc.maximoLotes : "—"}</td>
                   </tr>
                 );
               })}
@@ -118,9 +118,9 @@ export function EditorRegla({
       <div className="flex min-w-0 flex-col gap-4">
         <div className="grid grid-cols-1 gap-3.5 rounded-md bg-white p-4 shadow-[inset_0_0_0_1px_var(--border)] min-[900px]:grid-cols-2">
           <label className="flex flex-col gap-1.5 text-[13px] font-semibold">
-            Un lote rinde (unidades de {variante.producto})
-            <input value={rend} onChange={(e) => { setRend(e.target.value); setOk(null); }} inputMode="decimal" className={`${entradaAdmin} text-right tabular-nums`} />
-            <span className="text-xs font-normal text-text-2">Ej.: con estas cantidades salen 4 galones → 4.</span>
+            ¿Cuántas unidades salen de una producción?
+            <input value={rend} onChange={(e) => { setRend(e.target.value); setOk(null); }} inputMode="numeric" className={`${entradaAdmin} text-right tabular-nums`} />
+            <span className="text-xs font-normal text-text-2">Unidades de {variante.producto}. Ej.: con esta materia prima salen 20 galones → 20.</span>
           </label>
           {otras.length > 0 && (
             <label className="flex flex-col gap-1.5 text-[13px] font-semibold">
@@ -150,7 +150,7 @@ export function EditorRegla({
 
         <div className="overflow-hidden rounded-md bg-white shadow-[inset_0_0_0_1px_var(--border)]">
           <div className="border-b border-line px-4 py-3">
-            <h2 className="m-0 text-base font-bold">Materia prima por lote</h2>
+            <h2 className="m-0 text-base font-bold">Materia prima para una producción</h2>
           </div>
           {materias.length === 0 ? (
             <p className="m-0 px-4 py-8 text-center text-sm text-text-2">
@@ -198,9 +198,10 @@ export function EditorRegla({
       <div className="flex flex-col gap-3.5 rounded-md bg-white p-4 shadow-[inset_0_0_0_1px_var(--border)] min-[1180px]:sticky min-[1180px]:top-0">
         <h2 className="m-0 text-base font-bold">Resumen</h2>
         <dl className="m-0 grid grid-cols-[1fr_auto] gap-2 text-sm tabular-nums">
-          <dt className="text-text-2">Costo del lote</dt><dd className="m-0 text-right">{calc.sinCosto ? "—" : lempiras(calc.costoTotal)}</dd>
+          <dt className="text-text-2">Sale por producción</dt><dd className="m-0 text-right font-bold">{rendimiento.toLocaleString("en-US")} u.</dd>
+          <dt className="text-text-2">Costo de una producción</dt><dd className="m-0 text-right">{calc.sinCosto ? "—" : lempiras(calc.costoTotal)}</dd>
           <dt className="text-text-2">Costo por unidad</dt><dd className="m-0 text-right font-bold">{calc.costoUnitario == null ? "—" : lempiras(calc.costoUnitario)}</dd>
-          <dt className="text-text-2">Se pueden hacer hoy</dt><dd className="m-0 text-right font-bold">{borrador.ingredientes.length ? `${calc.maximo} u.` : "—"}</dd>
+          <dt className="text-text-2">Producciones posibles hoy</dt><dd className="m-0 text-right font-bold">{borrador.ingredientes.length ? `${calc.maximoLotes} (${(calc.maximoLotes * rendimiento).toLocaleString("en-US")} u.)` : "—"}</dd>
         </dl>
         {calc.sinCosto && borrador.ingredientes.length > 0 && <p className="m-0 text-xs text-warning">Alguna materia prima no tiene costo: se calcula al comprarla.</p>}
         {error && <MensajeError>{error}</MensajeError>}

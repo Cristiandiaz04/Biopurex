@@ -79,7 +79,7 @@ async function Materia({ params }: { params: PageProps<"/admin/materia-prima/[id
                       <img src={v?.img ?? "/img/logo.png"} alt="" className="size-9 flex-none object-contain" />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold">{v?.producto ?? "Producto"}</span>
-                        <span className="flex items-center gap-1.5 text-xs text-text-2"><PuntoAroma aroma={v?.aroma ?? null} />{v?.etiqueta} · {cantidad(u.cantidad, m.unidad)} por lote de {u.rendimiento}</span>
+                        <span className="flex items-center gap-1.5 text-xs text-text-2"><PuntoAroma aroma={v?.aroma ?? null} />{v?.etiqueta} · {cantidad(u.cantidad, m.unidad)} por producción de {u.rendimiento} u.</span>
                       </span>
                     </Link>
                   </li>

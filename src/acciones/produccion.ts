@@ -80,7 +80,9 @@ export async function guardarReceta(d: {
 }): Promise<Resultado> {
   if (!UUID.test(d.varianteId)) return { error: "Producto no válido" };
   const rend = numero(d.rendimiento);
-  if (rend === null || Number.isNaN(rend) || rend <= 0 || rend > 100000) return { error: "El rendimiento debe ser mayor que cero", errores: { rendimiento: "Mayor que 0" } };
+  if (rend === null || Number.isNaN(rend) || !Number.isInteger(rend) || rend <= 0 || rend > 100000) {
+    return { error: "Escribe cuántas unidades salen de una producción (número entero)", errores: { rendimiento: "Entero mayor que 0" } };
+  }
   const ings = d.ingredientes.filter((i) => i.materiaId);
   if (!ings.length) return { error: "Agrega al menos una materia prima" };
   const vistos = new Set<string>();
@@ -113,11 +115,21 @@ export async function guardarReceta(d: {
 // Producción
 // ---------------------------------------------------------------------------
 
-export async function producir(varianteId: string, cantidad: number, nota: string): Promise<Resultado & { codigo?: string }> {
+/** Se registra por número de producciones: cada una rinde lo que dice la regla de creación. */
+export async function producir(varianteId: string, producciones: number, nota: string): Promise<Resultado & { codigo?: string }> {
   if (!UUID.test(varianteId)) return { error: "Elige el producto" };
-  if (!Number.isInteger(cantidad) || cantidad < 1 || cantidad > 100000) return { error: "La cantidad debe ser un número entero mayor que 0" };
+  if (!Number.isInteger(producciones) || producciones < 1 || producciones > 1000) return { error: "Elige cuántas producciones hiciste (1 o más)" };
   const { supabase } = await exigirAdmin();
-  const { data, error } = await supabase.rpc("admin_producir", { p_variante: varianteId, p_cantidad: cantidad, p_nota: nota.trim().slice(0, 300) || null });
+  const { data: receta } = await supabase.from("recetas").select("rendimiento").eq("variante_id", varianteId).maybeSingle();
+  if (!receta) return { error: "Este producto no tiene regla de creación. Créala primero." };
+  const unidades = producciones * Number(receta.rendimiento);
+  if (!Number.isInteger(unidades)) return { error: "La regla tiene un rendimiento con decimales: corrígela con unidades enteras." };
+  const detalle = `${producciones} ${producciones === 1 ? "producción" : "producciones"} de ${Number(receta.rendimiento)}`;
+  const { data, error } = await supabase.rpc("admin_producir", {
+    p_variante: varianteId,
+    p_cantidad: unidades,
+    p_nota: [detalle, nota.trim()].filter(Boolean).join(" · ").slice(0, 300),
+  });
   if (error) return fallo("producir", error);
   updateTag("catalogo"); // hay nuevo stock disponible en la tienda
   revalidatePath("/admin/produccion");
