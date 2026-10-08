@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Direcciones } from "@/components/cuenta/direcciones";
 import { MarcoCuenta } from "@/components/cuenta/marco-cuenta";
 import { Cargando } from "@/components/ui/cargando";
+import { obtenerZonas } from "@/lib/datos/catalogo";
 import { obtenerDirecciones, obtenerPerfil } from "@/lib/datos/cuenta";
 
 export const metadata: Metadata = { title: "Mi cuenta" };
@@ -11,10 +12,10 @@ export const metadata: Metadata = { title: "Mi cuenta" };
 async function Cuenta() {
   const perfil = await obtenerPerfil();
   if (!perfil) redirect("/ingresar?siguiente=/cuenta");
-  const direcciones = await obtenerDirecciones();
+  const [direcciones, zonas] = await Promise.all([obtenerDirecciones(), obtenerZonas()]);
   return (
     <MarcoCuenta perfil={perfil} activo="/cuenta">
-      <Direcciones direcciones={direcciones} nombre={perfil.nombre} />
+      <Direcciones direcciones={direcciones} nombre={perfil.nombre} municipios={zonas.municipios} />
     </MarcoCuenta>
   );
 }

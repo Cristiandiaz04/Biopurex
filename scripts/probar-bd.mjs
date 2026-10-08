@@ -41,7 +41,8 @@ for (const archivo of readdirSync(dir).filter((x) => x.endsWith(".sql")).sort())
   ok(true, archivo + " corre sin errores");
 }
 // Las migraciones idempotentes se pueden volver a correr (p. ej. si Supabase cortó por un bloqueo).
-for (const archivo of ["0005_compras_cotizaciones_facturas.sql", "0006_materia_prima_produccion.sql"]) {
+// (en orden: 0007 redefine _crear_pedido de 0005)
+for (const archivo of ["0005_compras_cotizaciones_facturas.sql", "0006_materia_prima_produccion.sql", "0007_zonas_envio.sql"]) {
   await run(readFileSync(dir + "/" + archivo, "utf8"));
   ok(true, archivo + " se puede volver a correr");
 }
@@ -92,9 +93,14 @@ v = (await q("select stock, stock_apartado from public.variantes where id=$1", [
 ok(v.stock === 28 && v.stock_apartado === 0, `confirmar descuenta stock (${v.stock} / ${v.stock_apartado})`);
 ok((await q("select count(*)::int n from public.movimientos_inventario where pedido_id=$1", [p.id]))[0].n === 6, "kardex: apartado + liberación + venta");
 
+// Zonas de entrega (0007): el admin agrega Distrito Central / Tegucigalpa con envío de L 150.
+const mDC = await como(AD, async () => (await q("insert into public.municipios (departamento, nombre, costo_envio) values ('Francisco Morazán', 'Distrito Central', 150) returning id"))[0].id);
+await como(AD, () => q("insert into public.ciudades (municipio_id, nombre) values ($1, 'Tegucigalpa')", [mDC]));
+ok(true, "el admin agrega municipios y ciudades");
+// Sin municipio (direcciones viejas) se deduce por la ciudad.
 const cod2 = await como(U2, async () => (await q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb) c", [items([[vLav, 1]]), JSON.stringify({ nombre: "Clínica Santa Rosa", correo: "clinica@correo.com", telefono: "25501234" }), JSON.stringify({ departamento: "Francisco Morazán", ciudad: "Tegucigalpa", colonia: "Centro", direccion: "Ave. Cervantes" })]))[0].c);
 p = (await q("select * from public.pedidos where codigo=$1", [cod2]))[0];
-ok(p.estado === "confirmado" && p.zona_envio === "resto" && Number(p.total) === 245, `crédito: confirmado, resto del país, total ${p.total}`);
+ok(p.estado === "confirmado" && p.zona_envio === "resto" && Number(p.total) === 245 && p.municipio === "Distrito Central", `crédito: confirmado, envío del municipio, total ${p.total}`);
 ok(Number((await q("select saldo from public.perfiles where id=$1", [U2]))[0].saldo) === 245, "el crédito suma al saldo");
 await como(AD, () => q("select public.admin_cancelar_pedido($1,'Cliente lo pidió')", [p.id]));
 ok(Number((await q("select saldo from public.perfiles where id=$1", [U2]))[0].saldo) === 0, "cancelar un pedido a crédito resta el saldo");
@@ -201,6 +207,23 @@ try { await como(AD, () => q("select public.admin_producir($1, 1000)", [vLav]));
 ok(Number((await q("select stock from public.materias_primas where id=$1", [base]))[0].stock) === 14, "un intento fallido no descuenta nada");
 try { await como(AD, () => q("select public.admin_producir($1, 1)", [vCloro])); ok(false, "sin receta"); } catch (e) { ok(/no tiene regla/.test(e.message), "sin regla de creación no produce"); }
 try { await como(U1, () => q("select public.admin_producir($1, 1)", [vLav])); ok(false, "cliente produjo"); } catch { ok(true, "un cliente no puede producir"); }
+
+// ---- 0007: zonas de entrega y envío gratis ----
+try { await como(U1, () => q("insert into public.municipios (departamento, nombre) values ('Cortés', 'Choloma')")); ok(false, "cliente creó municipio"); } catch { ok(true, "un cliente no puede crear municipios"); }
+const dirCholoma = JSON.stringify({ departamento: "Cortés", municipio: "Choloma", ciudad: "Choloma", colonia: "Centro", direccion: "Casa 1" });
+try { await como(U1, () => q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb)", [items([[vLav, 1]]), contacto, dirCholoma])); ok(false, "pedido fuera de zona"); } catch (e) { ok(/no entregamos/.test(e.message), "fuera de la lista no se puede pedir"); }
+const dirSPS2 = JSON.stringify({ departamento: "Cortés", municipio: "San Pedro Sula", ciudad: "san pedro sula", colonia: "Trejo", direccion: "Casa 2" });
+await q("update public.configuracion set envio_gratis_desde = 95");
+const codG1 = await como(U1, async () => (await q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb) c", [items([[vLav, 1]]), contacto, dirSPS2]))[0].c);
+let pg = (await q("select * from public.pedidos where codigo=$1", [codG1]))[0];
+ok(Number(pg.envio) === 60 && pg.ciudad === "San Pedro Sula", `compra igual al mínimo paga envío (${pg.envio}) y la ciudad queda con el nombre de la lista`);
+await q("update public.configuracion set envio_gratis_desde = 94.99");
+const codG2 = await como(U1, async () => (await q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb) c", [items([[vLav, 1]]), contacto, dirSPS2]))[0].c);
+pg = (await q("select * from public.pedidos where codigo=$1", [codG2]))[0];
+ok(Number(pg.envio) === 0 && Number(pg.total) === Number(pg.subtotal), "compra mayor al mínimo: envío gratis");
+await como(AD, () => q("update public.municipios set activo = false where id = $1", [mDC]));
+ok((await como(U1, () => q("select count(*)::int n from public.municipios")))[0].n === 1, "el cliente solo ve municipios activos");
+try { await como(U2, () => q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb)", [items([[vLav, 1]]), contacto, JSON.stringify({ departamento: "Francisco Morazán", municipio: "Distrito Central", ciudad: "Tegucigalpa", colonia: "Centro", direccion: "Ave. Cervantes" })])); ok(false, "municipio inactivo"); } catch { ok(true, "un municipio desactivado ya no recibe pedidos"); }
 
 console.log(fallas ? `\n${fallas} FALLAS` : "\nTodo OK");
 await db.close();

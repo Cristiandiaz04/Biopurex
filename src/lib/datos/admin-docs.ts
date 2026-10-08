@@ -2,6 +2,7 @@ import "server-only";
 import type { EstadoPedido } from "@/lib/pedidos";
 import { exigirAdmin, listarInventario, type TipoCliente } from "./admin";
 import { listarMaterias } from "./produccion";
+import type { ZonasEnvio } from "@/lib/envio";
 
 const n = (x: unknown) => Number(x ?? 0);
 const ISV = 0.15;
@@ -383,7 +384,7 @@ export async function configuracionAdmin() {
   const { supabase } = await exigirAdmin();
   const { data, error } = await supabase
     .from("configuracion")
-    .select("banco, tipo_cuenta, numero_cuenta, titular, envio_sps, envio_resto, razon_social, rtn_emisor, direccion_emisor, telefono_emisor, correo_emisor")
+    .select("banco, tipo_cuenta, numero_cuenta, titular, razon_social, rtn_emisor, direccion_emisor, telefono_emisor, correo_emisor")
     .single();
   if (error) throw new Error(error.message);
   return {
@@ -391,8 +392,6 @@ export async function configuracionAdmin() {
     tipoCuenta: data.tipo_cuenta as string,
     numeroCuenta: data.numero_cuenta as string,
     titular: data.titular as string,
-    envioSps: n(data.envio_sps).toFixed(2),
-    envioResto: n(data.envio_resto).toFixed(2),
     razonSocial: data.razon_social as string,
     rtnEmisor: (data.rtn_emisor as string) ?? "",
     direccionEmisor: data.direccion_emisor as string,
@@ -441,5 +440,31 @@ export async function datosReportes() {
       })),
     })),
     inventario,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Zonas de entrega (0007)
+// ---------------------------------------------------------------------------
+
+/** Todos los municipios y ciudades (también los desactivados) y el mínimo del envío gratis. */
+export async function listarZonasAdmin(): Promise<ZonasEnvio> {
+  const { supabase } = await exigirAdmin();
+  const [m, c] = await Promise.all([
+    supabase.from("municipios").select("id, departamento, nombre, costo_envio, activo, ciudades(id, nombre, activo)").order("departamento").order("nombre"),
+    supabase.from("configuracion").select("envio_gratis_desde").single(),
+  ]);
+  if (m.error) throw new Error(m.error.message);
+  if (c.error) throw new Error(c.error.message);
+  return {
+    municipios: m.data.map((x) => ({
+      id: x.id,
+      departamento: x.departamento,
+      nombre: x.nombre,
+      costo: n(x.costo_envio),
+      activo: x.activo,
+      ciudades: (x.ciudades as { id: string; nombre: string; activo: boolean }[]).sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
+    })),
+    gratisDesde: c.data.envio_gratis_desde == null ? null : n(c.data.envio_gratis_desde),
   };
 }

@@ -142,8 +142,8 @@ export function ProductosPedido({ pedido }: { pedido: DetallePedido }) {
           </div>
         )}
         <div className="flex justify-between">
-          <span className="text-text-2">Envío · {pedido.zonaEnvio === "sps" ? "San Pedro Sula" : "Resto del país"}</span>
-          <span>{lempiras(pedido.envio)}</span>
+          <span className="text-text-2">Envío</span>
+          <span className={pedido.envio === 0 ? "font-semibold text-success" : ""}>{pedido.envio === 0 ? "Gratis" : lempiras(pedido.envio)}</span>
         </div>
         <div className="flex justify-between text-base font-bold">
           <span>Total</span>

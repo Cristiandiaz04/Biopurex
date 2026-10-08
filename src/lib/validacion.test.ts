@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { formatoTelefono, hayErrores, validarEnvio, validarRegistro, zonaEnvio, type DatosEnvio } from "./validacion";
+import { formatoTelefono, hayErrores, validarEnvio, validarRegistro, type DatosEnvio } from "./validacion";
 
 const base: DatosEnvio = {
   nombre: "María Fernanda Rápalo",
   correo: "mafer.rapalo@gmail.com",
   telefono: "9876-5432",
   departamento: "Cortés",
+  municipio: "San Pedro Sula",
   ciudad: "San Pedro Sula",
   colonia: "Jardines del Valle",
   direccion: "5ta calle, 7 ave., casa #12",
@@ -29,19 +30,8 @@ describe("validarEnvio", () => {
   });
 
   it("marca campos vacíos de la dirección", () => {
-    const e = validarEnvio({ ...base, ciudad: " ", colonia: "", direccion: "" });
-    expect(Object.keys(e).sort()).toEqual(["ciudad", "colonia", "direccion"]);
-  });
-});
-
-describe("zonaEnvio", () => {
-  it("San Pedro Sula en Cortés es SPS", () => {
-    expect(zonaEnvio("Cortés", "San Pedro Sula")).toBe("sps");
-    expect(zonaEnvio("Cortés", "san pedro sula")).toBe("sps");
-  });
-  it("otra ciudad o departamento es resto del país", () => {
-    expect(zonaEnvio("Cortés", "Choloma")).toBe("resto");
-    expect(zonaEnvio("Francisco Morazán", "Tegucigalpa")).toBe("resto");
+    const e = validarEnvio({ ...base, municipio: "", ciudad: " ", colonia: "", direccion: "" });
+    expect(Object.keys(e).sort()).toEqual(["ciudad", "colonia", "direccion", "municipio"]);
   });
 });
 

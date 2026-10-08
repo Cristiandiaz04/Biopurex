@@ -1,6 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { esAroma, esCategoria, type AromaId, type Insignia, type Producto } from "@/lib/catalogo";
 import { clientePublico } from "@/lib/supabase/publico";
+import { zonasActivas, type Municipio, type ZonasEnvio } from "@/lib/envio";
 
 type FilaVariante = {
   id: string;
@@ -98,8 +99,6 @@ export type Configuracion = {
   tipoCuenta: string;
   numeroCuenta: string;
   titular: string;
-  envioSps: number;
-  envioResto: number;
 };
 
 export async function obtenerConfiguracion(): Promise<Configuracion> {
@@ -109,7 +108,7 @@ export async function obtenerConfiguracion(): Promise<Configuracion> {
 
   const { data, error } = await clientePublico()
     .from("configuracion")
-    .select("banco, tipo_cuenta, numero_cuenta, titular, envio_sps, envio_resto")
+    .select("banco, tipo_cuenta, numero_cuenta, titular")
     .single();
   if (error) throw new Error(`No se pudo cargar la configuración: ${error.message}`);
   return {
@@ -117,7 +116,35 @@ export async function obtenerConfiguracion(): Promise<Configuracion> {
     tipoCuenta: data.tipo_cuenta,
     numeroCuenta: data.numero_cuenta,
     titular: data.titular,
-    envioSps: Number(data.envio_sps),
-    envioResto: Number(data.envio_resto),
+  };
+}
+
+/** Municipios y ciudades donde se entrega (los que el cliente puede elegir) y el mínimo del envío gratis. */
+export async function obtenerZonas(): Promise<ZonasEnvio> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("zonas");
+
+  const sb = clientePublico();
+  const [m, c] = await Promise.all([
+    sb.from("municipios").select("id, departamento, nombre, costo_envio, activo, ciudades(id, nombre, activo)").order("nombre"),
+    sb.from("configuracion").select("envio_gratis_desde").single(),
+  ]);
+  // Sin la migración 0007 la tienda sigue abierta, pero sin zonas no se puede confirmar un pedido.
+  if (m.error || c.error) {
+    console.error("[obtenerZonas]", m.error?.message ?? c.error?.message);
+    return { municipios: [], gratisDesde: null };
+  }
+  const municipios: Municipio[] = m.data.map((x) => ({
+    id: x.id,
+    departamento: x.departamento,
+    nombre: x.nombre,
+    costo: Number(x.costo_envio),
+    activo: x.activo,
+    ciudades: (x.ciudades as { id: string; nombre: string; activo: boolean }[]).sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
+  }));
+  return {
+    municipios: zonasActivas(municipios),
+    gratisDesde: c.data.envio_gratis_desde == null ? null : Number(c.data.envio_gratis_desde),
   };
 }

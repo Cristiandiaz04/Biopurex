@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { obtenerZonas } from "@/lib/datos/catalogo";
+import { resolverZona } from "@/lib/envio";
 import { createClient } from "@/lib/supabase/server";
 import { soloDigitos, validarEnvio, type DatosEnvio, type Errores } from "@/lib/validacion";
 
@@ -28,6 +30,8 @@ export async function guardarDireccion(entrada: {
   if (etiqueta.length < 1 || etiqueta.length > 40) errores.etiqueta = "Ponle un nombre (Casa, Oficina…)";
   if (Object.keys(errores).length) return { error: "Revisa los campos marcados.", errores: errores as Record<string, string> };
   if (entrada.id && !UUID.test(entrada.id)) return { error: "Dirección no válida." };
+  const zona = resolverZona((await obtenerZonas()).municipios, datos.departamento, datos.municipio, datos.ciudad);
+  if (!zona) return { error: "Por ahora no entregamos en esa zona.", errores: { ciudad: "Elige municipio y ciudad de la lista" } };
 
   if (entrada.predeterminada) {
     await supabase.from("direcciones").update({ predeterminada: false }).eq("usuario_id", user.id);
@@ -37,7 +41,8 @@ export async function guardarDireccion(entrada: {
     nombre: datos.nombre.trim(),
     telefono: soloDigitos(datos.telefono),
     departamento: datos.departamento,
-    ciudad: datos.ciudad.trim(),
+    municipio: zona.municipio.nombre,
+    ciudad: zona.ciudad,
     colonia: datos.colonia.trim(),
     direccion: datos.direccion.trim(),
     referencia: datos.referencia.trim() || null,

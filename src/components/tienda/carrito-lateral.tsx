@@ -6,12 +6,16 @@ import { useEffect } from "react";
 import { Check, ChevronRight, Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { AROMAS, aromaVar } from "@/lib/catalogo";
 import { lempiras } from "@/lib/formato";
+import { costoEnvio, faltaParaGratis } from "@/lib/envio";
 import { useCarrito } from "./carrito-provider";
 import { useCatalogo } from "./catalogo-provider";
 
 export function CarritoLateral() {
   const { lineas, cantidad, subtotal, abierto, cerrar, cambiar, quitar } = useCarrito();
   const { envio } = useCatalogo();
+  // Estimado con el municipio más barato; el real se calcula en el checkout según la dirección.
+  const envioEstimado = envio.desde == null ? null : costoEnvio(envio.desde, subtotal, envio.gratisDesde);
+  const falta = faltaParaGratis(subtotal, envio.gratisDesde);
 
   useEffect(() => {
     if (!abierto) return;
@@ -140,13 +144,16 @@ export function CarritoLateral() {
               </div>
               <div className="flex justify-between gap-3 text-sm">
                 <span className="text-text-2">Envío estimado</span>
-                <span className="text-right">
-                  {lempiras(envio.sps)} SPS · {lempiras(envio.resto)} resto del país
-                </span>
+                <span className="text-right">{envioEstimado == null ? "Se calcula al pagar" : envioEstimado === 0 ? <strong className="text-success">Gratis</strong> : lempiras(envioEstimado)}</span>
               </div>
+              {falta != null && falta >= 0 && (
+                <p className="m-0 rounded-sm bg-success-50 px-3 py-2 text-[13px] leading-normal text-success">
+                  Envío gratis en compras de más de {lempiras(envio.gratisDesde!)}. Te faltan {lempiras(falta)} o más.
+                </p>
+              )}
               <div className="flex items-baseline justify-between">
                 <span className="font-bold">Total estimado</span>
-                <span className="text-xl font-bold">{lempiras(subtotal + envio.sps)}</span>
+                <span className="text-xl font-bold">{lempiras(subtotal + (envioEstimado ?? 0))}</span>
               </div>
               <Link
                 href="/checkout"

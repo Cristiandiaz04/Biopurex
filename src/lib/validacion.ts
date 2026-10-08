@@ -29,6 +29,7 @@ export type DatosEnvio = {
   correo: string;
   telefono: string;
   departamento: string;
+  municipio: string;
   ciudad: string;
   colonia: string;
   direccion: string;
@@ -54,16 +55,12 @@ export function validarEnvio(d: DatosEnvio): Errores<DatosEnvio> {
   if (!CORREO.test(d.correo.trim())) e.correo = d.correo.trim() ? "Ingresa un correo válido" : "Este campo es obligatorio";
   if (soloDigitos(d.telefono).length !== 8) e.telefono = d.telefono.trim() ? "El teléfono debe tener 8 dígitos" : "Este campo es obligatorio";
   if (!(DEPARTAMENTOS as readonly string[]).includes(d.departamento)) e.departamento = "Elige un departamento";
-  if (!largo(d.ciudad, 2, 80)) e.ciudad = "Este campo es obligatorio";
+  if (!largo(d.municipio, 2, 80)) e.municipio = "Elige tu municipio";
+  if (!largo(d.ciudad, 2, 80)) e.ciudad = "Elige tu ciudad";
   if (!largo(d.colonia, 2, 120)) e.colonia = "Este campo es obligatorio";
   if (!largo(d.direccion, 3, 200)) e.direccion = "Este campo es obligatorio";
   if (d.referencia.trim().length > 200) e.referencia = "Máximo 200 caracteres";
   return e;
-}
-
-/** Zona de envío: San Pedro Sula (Cortés) o resto del país. Igual que en crear_pedido. */
-export function zonaEnvio(departamento: string, ciudad: string): "sps" | "resto" {
-  return departamento === "Cortés" && /san pedro/i.test(ciudad) ? "sps" : "resto";
 }
 
 export type DatosCuenta = { nombre: string; correo: string; contrasena: string };

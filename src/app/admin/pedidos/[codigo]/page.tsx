@@ -116,7 +116,7 @@ async function Detalle({ params }: { params: PageProps<"/admin/pedidos/[codigo]"
                     <dd className="m-0 text-right text-success">−{lempiras(p.descuento)}</dd>
                   </>
                 )}
-                <dt className="text-text-2">Envío · {p.zonaEnvio === "sps" ? "SPS" : "Resto del país"}</dt><dd className="m-0 text-right">{lempiras(p.envio)}</dd>
+                <dt className="text-text-2">Envío</dt><dd className="m-0 text-right">{p.envio === 0 ? "Gratis" : lempiras(p.envio)}</dd>
                 <dt className="text-base font-bold">Total</dt><dd className="m-0 text-right text-base font-bold">{lempiras(p.total)}</dd>
                 <dt className="text-xs text-text-2">ISV 15 % incluido</dt><dd className="m-0 text-right text-xs text-text-2">{lempiras(isv)}</dd>
               </dl>

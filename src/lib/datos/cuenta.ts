@@ -18,6 +18,7 @@ export type Direccion = {
   nombre: string;
   telefono: string;
   departamento: string;
+  municipio: string | null;
   ciudad: string;
   colonia: string;
   direccion: string;
@@ -50,7 +51,7 @@ export async function obtenerDirecciones(): Promise<Direccion[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("direcciones")
-    .select("id, etiqueta, nombre, telefono, departamento, ciudad, colonia, direccion, referencia, predeterminada")
+    .select("id, etiqueta, nombre, telefono, departamento, municipio, ciudad, colonia, direccion, referencia, predeterminada")
     .order("predeterminada", { ascending: false })
     .order("creado_en");
   return data ?? [];

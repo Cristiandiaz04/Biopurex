@@ -3,14 +3,16 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { AlertTriangle, ChevronLeft, Copy, Check, MapPin, Tag, X } from "lucide-react";
+import { AlertTriangle, ChevronLeft, Copy, Check, Tag, Truck, X } from "lucide-react";
 import { crearPedido, validarCodigo } from "@/acciones/checkout";
 import { Campo, MensajeError, Selector } from "@/components/ui/campo";
+import { SelectorZona, zonaDeDireccion, zonaInicial } from "@/components/ui/selector-zona";
 import { AROMAS, aromaVar } from "@/lib/catalogo";
 import type { Configuracion } from "@/lib/datos/catalogo";
 import type { Direccion, Perfil } from "@/lib/datos/cuenta";
+import { costoEnvio, faltaParaGratis, resolverZona, type Municipio, type ZonasEnvio } from "@/lib/envio";
 import { lempiras } from "@/lib/formato";
-import { DEPARTAMENTOS, formatoTelefono, hayErrores, validarEnvio, zonaEnvio, type DatosEnvio, type Errores } from "@/lib/validacion";
+import { formatoTelefono, hayErrores, validarEnvio, type DatosEnvio, type Errores } from "@/lib/validacion";
 import { useCarrito } from "./carrito-provider";
 
 const tarjeta = "rounded-lg bg-bg p-[clamp(18px,3vw,28px)] shadow-1";
@@ -27,13 +29,15 @@ function Paso({ n, children, sub }: { n: number; children: React.ReactNode; sub?
   );
 }
 
-function desdeDireccion(d: Direccion, correo: string): DatosEnvio {
+function desdeDireccion(d: Direccion, correo: string, municipios: Municipio[]): DatosEnvio {
+  const z = zonaDeDireccion(municipios, { departamento: d.departamento, municipio: d.municipio ?? "", ciudad: d.ciudad });
   return {
     nombre: d.nombre,
     correo,
     telefono: formatoTelefono(d.telefono),
-    departamento: d.departamento,
-    ciudad: d.ciudad,
+    departamento: z.departamento,
+    municipio: z.municipio,
+    ciudad: z.ciudad,
     colonia: d.colonia,
     direccion: d.direccion,
     referencia: d.referencia ?? "",
@@ -44,24 +48,26 @@ export function FormularioCheckout({
   perfil,
   direcciones,
   conf,
+  zonas,
 }: {
   perfil: Perfil;
   direcciones: Direccion[];
   conf: Configuracion;
+  zonas: ZonasEnvio;
 }) {
+  const { municipios, gratisDesde } = zonas;
   const router = useRouter();
   const { lineas, subtotal, abrir, vaciar, avisar } = useCarrito();
   const predet = direcciones[0];
   const [elegida, setElegida] = useState<string | null>(predet?.id ?? null);
   const [datos, setDatos] = useState<DatosEnvio>(() =>
     predet
-      ? desdeDireccion(predet, perfil.correo)
+      ? desdeDireccion(predet, perfil.correo, municipios)
       : {
           nombre: perfil.nombre,
           correo: perfil.correo,
           telefono: perfil.telefono ? formatoTelefono(perfil.telefono) : "",
-          departamento: "Cortés",
-          ciudad: "",
+          ...zonaInicial(municipios),
           colonia: "",
           direccion: "",
           referencia: "",
@@ -77,11 +83,16 @@ export function FormularioCheckout({
   const [errorCupon, setErrorCupon] = useState<string | null>(null);
   const [validando, iniciarValidacion] = useTransition();
 
-  const zona = zonaEnvio(datos.departamento, datos.ciudad);
-  const envio = zona === "sps" ? conf.envioSps : conf.envioResto;
+  const zona = resolverZona(municipios, datos.departamento, datos.municipio, datos.ciudad);
+  const envio = zona ? costoEnvio(zona.municipio.costo, subtotal, gratisDesde) : null;
+  const falta = faltaParaGratis(subtotal, gratisDesde);
+  const guardada = direcciones.find((x) => x.id === elegida);
+  const elegidaFuera = guardada
+    ? zonaDeDireccion(municipios, { departamento: guardada.departamento, municipio: guardada.municipio ?? "", ciudad: guardada.ciudad }).fuera
+    : false;
   const normal = perfil.tipoCliente === "normal";
   const descuento = cupon ? Math.round(subtotal * cupon.porcentaje) / 100 : 0;
-  const total = subtotal - descuento + envio;
+  const total = subtotal - descuento + (envio ?? 0);
 
   function aplicarCodigo() {
     setErrorCupon(null);
@@ -105,10 +116,17 @@ export function FormularioCheckout({
       });
   }
 
-  function usarDireccion(d: Direccion) {
-    setElegida(d.id);
-    setDatos(desdeDireccion(d, datos.correo));
+  function usarDireccion(id: string) {
+    const d = direcciones.find((x) => x.id === id);
     setErrores({});
+    if (d) {
+      setElegida(d.id);
+      setDatos(desdeDireccion(d, datos.correo, municipios));
+    } else {
+      // "Otra dirección": se conservan los datos de contacto y se limpia la dirección.
+      setElegida(null);
+      setDatos((x) => ({ ...x, ...zonaInicial(municipios), colonia: "", direccion: "", referencia: "" }));
+    }
   }
 
   async function copiar(texto: string, etiqueta: string) {
@@ -183,33 +201,44 @@ export function FormularioCheckout({
             <section className={tarjeta}>
               <Paso n={2}>Dirección de envío</Paso>
               {direcciones.length > 0 && (
-                <div className="mb-5 flex flex-wrap gap-2" role="radiogroup" aria-label="Direcciones guardadas">
+                <Selector
+                  label="Seleccionar dirección establecida"
+                  name="direccion-guardada"
+                  value={elegida ?? "nueva"}
+                  onChange={(e) => usarDireccion(e.target.value)}
+                  className="mb-5"
+                >
                   {direcciones.map((d) => (
-                    <button
-                      key={d.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={elegida === d.id}
-                      onClick={() => usarDireccion(d)}
-                      className={`flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold ${
-                        elegida === d.id ? "bg-navy text-white" : "shadow-[inset_0_0_0_1.5px_var(--border)]"
-                      }`}
-                    >
-                      <MapPin size={16} aria-hidden />
-                      {d.etiqueta}
-                    </button>
+                    <option key={d.id} value={d.id}>
+                      {d.etiqueta} — {d.direccion}, {d.colonia}, {d.ciudad}
+                    </option>
                   ))}
+                  <option value="nueva">Otra dirección…</option>
+                </Selector>
+              )}
+              {elegidaFuera && (
+                <div role="alert" className="mb-4 flex items-start gap-2 rounded-md bg-warning-50 px-3.5 py-3 text-sm text-warning">
+                  <AlertTriangle size={16} className="mt-0.5 flex-none" aria-hidden />
+                  Esa dirección está fuera de nuestra zona de entrega. Elige municipio y ciudad de la lista.
                 </div>
               )}
               <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2">
-                <Selector label="Departamento" name="departamento" value={datos.departamento} onChange={(e) => cambiar("departamento", e.target.value)} error={errores.departamento}>
-                  {DEPARTAMENTOS.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </Selector>
-                {campo("ciudad", "Ciudad o municipio", { placeholder: "San Pedro Sula", autoComplete: "address-level2" })}
+                <SelectorZona
+                  municipios={municipios}
+                  valor={{ departamento: datos.departamento, municipio: datos.municipio, ciudad: datos.ciudad }}
+                  onChange={(z) => {
+                    setDatos((d) => ({ ...d, ...z }));
+                    setElegida(null);
+                    setErrores((prev) => {
+                      const resto = { ...prev };
+                      delete resto.departamento;
+                      delete resto.municipio;
+                      delete resto.ciudad;
+                      return resto;
+                    });
+                  }}
+                  errores={errores}
+                />
                 {campo("colonia", "Colonia o barrio", { placeholder: "Col. Trejo" })}
                 {campo("direccion", "Dirección", { placeholder: "Calle, avenida, número de casa", autoComplete: "street-address", className: "min-[900px]:col-span-2" })}
                 {campo("referencia", "Punto de referencia", { opcional: true, placeholder: "Frente a…", className: "min-[900px]:col-span-2" })}
@@ -223,31 +252,28 @@ export function FormularioCheckout({
             </section>
 
             <section className={tarjeta}>
-              <Paso n={3} sub="Se calcula según tu dirección.">
+              <Paso n={3} sub="Se calcula según tu municipio.">
                 Costo de envío
               </Paso>
-              <div className="grid grid-cols-1 gap-3 min-[900px]:grid-cols-2">
-                {(
-                  [
-                    ["sps", "San Pedro Sula", "Entrega en 24 a 48 horas", conf.envioSps],
-                    ["resto", "Resto del país", "De 2 a 4 días hábiles", conf.envioResto],
-                  ] as const
-                ).map(([z, titulo, sub, monto]) => (
-                  <div
-                    key={z}
-                    className={`flex items-center gap-3 rounded-md p-4 ${zona === z ? "bg-navy-50 shadow-[inset_0_0_0_1.5px_var(--navy)]" : "bg-bg shadow-[inset_0_0_0_1.5px_var(--border)]"}`}
-                  >
-                    <span className={`flex size-[22px] flex-none items-center justify-center rounded-full bg-navy text-white ${zona === z ? "" : "opacity-0"}`}>
-                      <Check size={16} strokeWidth={2.25} aria-hidden />
-                    </span>
-                    <div className="flex-1">
-                      <div className="font-semibold">{titulo}</div>
-                      <div className="text-[13px] text-text-2">{sub}</div>
-                    </div>
-                    <strong>{lempiras(monto)}</strong>
-                  </div>
-                ))}
+              <div className={`flex items-center gap-3 rounded-md p-4 ${zona ? "bg-navy-50 shadow-[inset_0_0_0_1.5px_var(--navy)]" : "bg-bg shadow-[inset_0_0_0_1.5px_var(--border)]"}`}>
+                <span className="flex size-10 flex-none items-center justify-center rounded-full bg-navy text-white">
+                  <Truck size={20} aria-hidden />
+                </span>
+                <div className="flex-1">
+                  <div className="font-semibold">{zona ? `${zona.municipio.nombre}, ${zona.municipio.departamento}` : "Elige tu municipio y ciudad"}</div>
+                  <div className="text-[13px] text-text-2">Entrega en 24 a 48 horas</div>
+                </div>
+                <strong className={envio === 0 ? "text-success" : ""}>{envio == null ? "—" : envio === 0 ? "Gratis" : lempiras(envio)}</strong>
               </div>
+              {gratisDesde != null && (
+                <p className="mb-0 mt-3 text-sm leading-normal text-text-2">
+                  {falta == null ? (
+                    <strong className="text-success">Tu compra pasa de {lempiras(gratisDesde)}: el envío es gratis.</strong>
+                  ) : (
+                    <>Envío gratis en compras de más de {lempiras(gratisDesde)}. Te faltan {lempiras(falta)} o más.</>
+                  )}
+                </p>
+              )}
             </section>
 
             <section className={tarjeta}>
@@ -333,8 +359,8 @@ export function FormularioCheckout({
                 <span>{lempiras(subtotal)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-text-2">Envío · {zona === "sps" ? "San Pedro Sula" : "Resto del país"}</span>
-                <span>{lempiras(envio)}</span>
+                <span className="text-text-2">Envío{zona ? ` · ${zona.municipio.nombre}` : ""}</span>
+                <span className={envio === 0 ? "font-semibold text-success" : ""}>{envio == null ? "—" : envio === 0 ? "Gratis" : lempiras(envio)}</span>
               </div>
               {cupon && (
                 <div className="flex justify-between text-success">
@@ -394,7 +420,7 @@ export function FormularioCheckout({
             <button
               type="button"
               onClick={confirmar}
-              disabled={enviando || lineas.length === 0}
+              disabled={enviando || lineas.length === 0 || !zona}
               className="flex h-[54px] items-center justify-center gap-2 rounded-full bg-navy font-semibold text-white transition-[background-color,transform] hover:bg-navy-700 active:scale-[.98] disabled:opacity-60"
             >
               {enviando ? "Creando tu pedido…" : "Confirmar pedido"}

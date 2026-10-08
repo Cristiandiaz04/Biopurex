@@ -1,6 +1,8 @@
 "use server";
 
 import { updateTag } from "next/cache";
+import { obtenerZonas } from "@/lib/datos/catalogo";
+import { resolverZona } from "@/lib/envio";
 import { createClient } from "@/lib/supabase/server";
 import { hayErrores, soloDigitos, validarEnvio, type DatosEnvio, type Errores } from "@/lib/validacion";
 
@@ -25,6 +27,9 @@ export async function crearPedido(entrada: {
     return { error: "Tu carrito tiene datos no válidos. Recarga la página." };
   }
 
+  const zona = resolverZona((await obtenerZonas()).municipios, datos.departamento, datos.municipio, datos.ciudad);
+  if (!zona) return { error: "Por ahora no entregamos en esa zona.", errores: { ciudad: "Elige municipio y ciudad de la lista" } };
+
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return { error: "Tu sesión expiró. Vuelve a iniciar sesión." };
@@ -35,7 +40,8 @@ export async function crearPedido(entrada: {
     p_contacto: { nombre: datos.nombre.trim(), correo: datos.correo.trim(), telefono: soloDigitos(datos.telefono) },
     p_direccion: {
       departamento: datos.departamento,
-      ciudad: datos.ciudad.trim(),
+      municipio: zona.municipio.nombre,
+      ciudad: zona.ciudad,
       colonia: datos.colonia.trim(),
       direccion: datos.direccion.trim(),
       referencia: datos.referencia.trim(),

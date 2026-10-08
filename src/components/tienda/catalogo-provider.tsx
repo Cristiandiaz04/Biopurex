@@ -3,10 +3,13 @@
 import { createContext, useContext, useMemo } from "react";
 import type { Producto } from "@/lib/catalogo";
 
+/** Resumen del envío para la tienda: costo más bajo, mínimo del envío gratis y municipios con entrega. */
+export type ResumenEnvio = { desde: number | null; gratisDesde: number | null; zonas: string[] };
+
 type Ctx = {
   productos: Producto[];
   porSlug: (slug: string) => Producto | undefined;
-  envio: { sps: number; resto: number };
+  envio: ResumenEnvio;
 };
 
 const CatalogoCtx = createContext<Ctx | null>(null);
@@ -18,7 +21,7 @@ export function CatalogoProvider({
   children,
 }: {
   productos: Producto[];
-  envio: { sps: number; resto: number };
+  envio: ResumenEnvio;
   children: React.ReactNode;
 }) {
   const valor = useMemo<Ctx>(() => {

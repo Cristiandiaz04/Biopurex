@@ -241,8 +241,9 @@ export function FichaProducto({
             <div className={`flex items-start gap-3 text-sm leading-normal ${th.fg2}`}>
               <Truck size={20} className={`flex-none ${th.fg}`} aria-hidden />
               <span>
-                Envío a todo Honduras · San Pedro Sula {lempiras(envio.sps)} · resto del país {lempiras(envio.resto)}{" "}
-                <span className="opacity-80">(montos de ejemplo)</span>
+                {envio.zonas.length ? `Entregamos en ${envio.zonas.join(", ")}` : "Entregas a domicilio"}
+                {envio.desde != null && ` · envío ${lempiras(envio.desde)}`}
+                {envio.gratisDesde != null && ` · gratis en compras de más de ${lempiras(envio.gratisDesde)}`}
               </span>
             </div>
 

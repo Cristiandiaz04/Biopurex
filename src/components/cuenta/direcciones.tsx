@@ -4,9 +4,11 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { MapPin, Plus } from "lucide-react";
 import { eliminarDireccion, guardarDireccion } from "@/acciones/cuenta";
-import { Campo, MensajeError, Selector } from "@/components/ui/campo";
+import { Campo, MensajeError } from "@/components/ui/campo";
+import { SelectorZona, zonaDeDireccion, zonaInicial } from "@/components/ui/selector-zona";
 import type { Direccion } from "@/lib/datos/cuenta";
-import { DEPARTAMENTOS, formatoTelefono } from "@/lib/validacion";
+import type { Municipio } from "@/lib/envio";
+import { formatoTelefono } from "@/lib/validacion";
 
 type Form = {
   id?: string;
@@ -14,6 +16,7 @@ type Form = {
   nombre: string;
   telefono: string;
   departamento: string;
+  municipio: string;
   ciudad: string;
   colonia: string;
   direccion: string;
@@ -21,19 +24,18 @@ type Form = {
   predeterminada: boolean;
 };
 
-const vacio = (nombre: string): Form => ({
+const vacio = (nombre: string, municipios: Municipio[]): Form => ({
   etiqueta: "Casa",
   nombre,
   telefono: "",
-  departamento: "Cortés",
-  ciudad: "",
+  ...zonaInicial(municipios),
   colonia: "",
   direccion: "",
   referencia: "",
   predeterminada: false,
 });
 
-export function Direcciones({ direcciones, nombre }: { direcciones: Direccion[]; nombre: string }) {
+export function Direcciones({ direcciones, nombre, municipios }: { direcciones: Direccion[]; nombre: string; municipios: Municipio[] }) {
   const router = useRouter();
   const [form, setForm] = useState<Form | null>(null);
   const [errores, setErrores] = useState<Record<string, string>>({});
@@ -45,7 +47,8 @@ export function Direcciones({ direcciones, nombre }: { direcciones: Direccion[];
   function editar(d: Direccion) {
     setErrores({});
     setError(null);
-    setForm({ ...d, telefono: formatoTelefono(d.telefono), referencia: d.referencia ?? "" });
+    const z = zonaDeDireccion(municipios, { departamento: d.departamento, municipio: d.municipio ?? "", ciudad: d.ciudad });
+    setForm({ ...d, departamento: z.departamento, municipio: z.municipio, ciudad: z.ciudad, telefono: formatoTelefono(d.telefono), referencia: d.referencia ?? "" });
   }
 
   function guardar() {
@@ -85,12 +88,12 @@ export function Direcciones({ direcciones, nombre }: { direcciones: Direccion[];
             {campo("etiqueta", "Nombre de la dirección", { placeholder: "Casa, Oficina, Mamá…" })}
             {campo("nombre", "Quién recibe", { autoComplete: "name" })}
             {campo("telefono", "Teléfono", { type: "tel", inputMode: "numeric", placeholder: "9876-5432" })}
-            <Selector label="Departamento" name="departamento" value={form.departamento} onChange={(e) => set("departamento", e.target.value)} error={errores.departamento}>
-              {DEPARTAMENTOS.map((d) => (
-                <option key={d}>{d}</option>
-              ))}
-            </Selector>
-            {campo("ciudad", "Ciudad o municipio")}
+            <SelectorZona
+              municipios={municipios}
+              valor={{ departamento: form.departamento, municipio: form.municipio, ciudad: form.ciudad }}
+              onChange={(z) => setForm((f) => (f ? { ...f, ...z } : f))}
+              errores={errores}
+            />
             {campo("colonia", "Colonia o barrio")}
             {campo("direccion", "Dirección", { className: "min-[900px]:col-span-2" })}
             {campo("referencia", "Punto de referencia", { opcional: true, className: "min-[900px]:col-span-2" })}
@@ -142,7 +145,7 @@ export function Direcciones({ direcciones, nombre }: { direcciones: Direccion[];
             onClick={() => {
               setErrores({});
               setError(null);
-              setForm({ ...vacio(nombre), predeterminada: direcciones.length === 0 });
+              setForm({ ...vacio(nombre, municipios), predeterminada: direcciones.length === 0 });
             }}
             className="flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-line font-semibold hover:border-navy hover:bg-bg"
           >

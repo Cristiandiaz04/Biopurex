@@ -248,8 +248,6 @@ export type DatosConfiguracion = {
   tipoCuenta: string;
   numeroCuenta: string;
   titular: string;
-  envioSps: string;
-  envioResto: string;
 };
 
 export async function guardarConfiguracion(d: DatosConfiguracion): Promise<Resultado> {
@@ -270,10 +268,6 @@ export async function guardarConfiguracion(d: DatosConfiguracion): Promise<Resul
   const tipo = req("tipoCuenta", 60);
   const numero = req("numeroCuenta", 40);
   const titular = req("titular", 120);
-  const sps = dinero(d.envioSps);
-  const resto = dinero(d.envioResto);
-  if (sps === "error" || sps === null) e.envioSps = "Monto no válido";
-  if (resto === "error" || resto === null) e.envioResto = "Monto no válido";
   if (Object.keys(e).length) return { error: "Revisa los campos marcados.", errores: e };
 
   const { supabase } = await exigirAdmin();
@@ -289,12 +283,10 @@ export async function guardarConfiguracion(d: DatosConfiguracion): Promise<Resul
       tipo_cuenta: tipo,
       numero_cuenta: numero,
       titular,
-      envio_sps: sps,
-      envio_resto: resto,
     })
     .eq("id", true);
   if (error) return fallo("guardarConfiguracion", error);
-  // La tienda muestra envío y datos bancarios desde una caché de horas: se invalida ya.
+  // La tienda muestra los datos bancarios desde una caché de horas: se invalida ya.
   updateTag("configuracion");
   revalidatePath("/admin/configuracion");
   return { ok: "Configuración guardada" };

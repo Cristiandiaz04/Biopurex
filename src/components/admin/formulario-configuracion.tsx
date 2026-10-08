@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { guardarConfiguracion, type DatosConfiguracion } from "@/acciones/admin-docs";
 import { MensajeError } from "@/components/ui/campo";
@@ -61,11 +62,9 @@ export function FormularioConfiguracion({ inicial }: { inicial: DatosConfiguraci
       <section className={seccion}>
         <div>
           <h2 className="m-0 text-base font-bold">Costos de envío</h2>
-          <p className="mb-0 mt-1 text-[13px] text-text-2">San Pedro Sula aplica cuando el departamento es Cortés y la ciudad es San Pedro Sula.</p>
-        </div>
-        <div className="grid grid-cols-2 gap-3.5">
-          {campo("envioSps", "San Pedro Sula (L.)", { inputMode: "decimal" })}
-          {campo("envioResto", "Resto del país (L.)", { inputMode: "decimal" })}
+          <p className="mb-0 mt-1 text-[13px] text-text-2">
+            Se definen por municipio en <Link href="/admin/envios">Zonas de envío</Link>, junto con el monto del envío gratis.
+          </p>
         </div>
       </section>
       {error && <MensajeError>{error}</MensajeError>}

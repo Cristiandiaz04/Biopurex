@@ -4,24 +4,57 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
-import { BarChart3, Box, Building2, Factory, FileText, FlaskConical, LayoutDashboard, LogOut, Menu, PanelLeft, Receipt, Settings, ShoppingBag, Store, Tag, Truck, Users, Wallet, X } from "lucide-react";
+import { BarChart3, Boxes, FileText, LayoutDashboard, LogOut, Menu, PanelLeft, Settings, ShoppingBag, Store, Tag, Truck, Users, Wallet, X, type LucideIcon } from "lucide-react";
 import { cerrarSesion } from "@/acciones/acceso";
 
-const NAV = [
+type Sub = { href: string; label: string };
+type Item = { label: string; icono: LucideIcon; href: string; insignia?: boolean; hijos?: Sub[] };
+
+// Las pantallas relacionadas van juntas: el grupo abre su primera pantalla y adentro hay pestañas.
+const NAV: Item[] = [
   { href: "/admin", label: "Dashboard", icono: LayoutDashboard },
   { href: "/admin/pedidos", label: "Pedidos", icono: ShoppingBag, insignia: true },
   { href: "/admin/clientes", label: "Clientes", icono: Users },
-  { href: "/admin/productos", label: "Productos e inventario", icono: Box },
-  { href: "/admin/materia-prima", label: "Materia prima", icono: FlaskConical },
-  { href: "/admin/produccion", label: "Producción", icono: Factory },
-  { href: "/admin/compras", label: "Compras", icono: Truck },
-  { href: "/admin/proveedores", label: "Proveedores", icono: Building2 },
-  { href: "/admin/cotizaciones", label: "Cotizaciones", icono: FileText },
-  { href: "/admin/facturas", label: "Facturas", icono: Receipt },
+  {
+    href: "/admin/productos",
+    label: "Inventario",
+    icono: Boxes,
+    hijos: [
+      { href: "/admin/productos", label: "Productos e inventario" },
+      { href: "/admin/materia-prima", label: "Materia prima" },
+      { href: "/admin/produccion", label: "Producción" },
+    ],
+  },
+  {
+    href: "/admin/compras",
+    label: "Compras",
+    icono: Truck,
+    hijos: [
+      { href: "/admin/compras", label: "Compras" },
+      { href: "/admin/proveedores", label: "Proveedores" },
+    ],
+  },
+  {
+    href: "/admin/cotizaciones",
+    label: "Documentos",
+    icono: FileText,
+    hijos: [
+      { href: "/admin/cotizaciones", label: "Cotizaciones" },
+      { href: "/admin/facturas", label: "Facturas" },
+    ],
+  },
   { href: "/admin/cuentas", label: "Cuentas por cobrar", icono: Wallet },
   { href: "/admin/descuentos", label: "Descuentos", icono: Tag },
   { href: "/admin/reportes", label: "Reportes", icono: BarChart3 },
-  { href: "/admin/configuracion", label: "Configuración", icono: Settings },
+  {
+    href: "/admin/configuracion",
+    label: "Configuración",
+    icono: Settings,
+    hijos: [
+      { href: "/admin/configuracion", label: "General" },
+      { href: "/admin/envios", label: "Zonas de envío" },
+    ],
+  },
 ];
 
 // Preferencia "menú plegado" (por navegador).
@@ -51,8 +84,10 @@ export function MarcoAdmin({ nombre, pendientes, children }: { nombre: string; p
   const plegado = useSyncExternalStore(suscribirPlegado, leerPlegado, () => false);
   const [abierto, setAbierto] = useState(false);
 
-  const activo = (href: string) => (href === "/admin" ? pathname === "/admin" : pathname.startsWith(href));
-  const titulo = NAV.find((n) => activo(n.href))?.label ?? "Panel";
+  const activo = (href: string) => (href === "/admin" ? pathname === "/admin" : pathname === href || pathname.startsWith(href + "/"));
+  const itemActivo = (n: Item) => (n.hijos ? n.hijos.some((h) => activo(h.href)) : activo(n.href));
+  const grupo = NAV.find((n) => n.hijos && itemActivo(n));
+  const titulo = grupo ? `${grupo.label} · ${grupo.hijos!.find((h) => activo(h.href))!.label}` : (NAV.find(itemActivo)?.label ?? "Panel");
 
   const alternar = () => {
     try {
@@ -84,33 +119,51 @@ export function MarcoAdmin({ nombre, pendientes, children }: { nombre: string; p
           )}
         </div>
         <nav aria-label="Menú principal" className="no-scrollbar flex flex-1 flex-col gap-0.5 overflow-y-auto px-3.5 py-2">
-          {NAV.map(({ href, label, icono: Icono, insignia }) => {
-            const act = activo(href);
+          {NAV.map((item) => {
+            const { href, label, icono: Icono, insignia, hijos } = item;
+            const act = itemActivo(item);
             return (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setAbierto(false)}
-                title={label}
-                aria-current={act ? "page" : undefined}
-                className={`relative flex h-11 min-w-12 flex-none items-center gap-3 whitespace-nowrap rounded-sm px-3.5 text-sm font-semibold no-underline transition-colors hover:bg-white/10 hover:text-white ${
-                  act ? "bg-white/[.14] text-white" : "text-on-navy-2"
-                }`}
-              >
-                <span className="absolute -left-3.5 bottom-2.5 top-2.5 w-[3px] rounded-r-[3px] bg-green" style={{ opacity: act ? 1 : 0 }} />
-                <Icono size={20} className="flex-none" aria-hidden />
-                <span className={`flex-1 truncate ${etiquetas ? "" : "hidden"} ${movil ? "" : "max-[1179px]:hidden"}`}>{label}</span>
-                {insignia && pendientes > 0 && (
-                  <span
-                    className={`flex h-5 min-w-5 items-center justify-center rounded-full bg-green px-1.5 text-[11px] font-bold text-navy ${
-                      // Con etiquetas va al final de la fila; en modo íconos, sobre la esquina del ícono.
-                      etiquetas ? "" : "absolute right-1 top-0.5"
-                    } ${movil ? "" : "max-[1179px]:absolute max-[1179px]:right-1 max-[1179px]:top-0.5"}`}
-                  >
-                    {pendientes}
-                  </span>
+              <div key={label} className="flex flex-none flex-col gap-0.5">
+                <Link
+                  href={href}
+                  onClick={() => setAbierto(false)}
+                  title={label}
+                  aria-current={act ? "page" : undefined}
+                  className={`relative flex h-11 min-w-12 flex-none items-center gap-3 whitespace-nowrap rounded-sm px-3.5 text-sm font-semibold no-underline transition-colors hover:bg-white/10 hover:text-white ${
+                    act ? "bg-white/[.14] text-white" : "text-on-navy-2"
+                  }`}
+                >
+                  <span className="absolute -left-3.5 bottom-2.5 top-2.5 w-[3px] rounded-r-[3px] bg-green" style={{ opacity: act ? 1 : 0 }} />
+                  <Icono size={20} className="flex-none" aria-hidden />
+                  <span className={`flex-1 truncate ${etiquetas ? "" : "hidden"} ${movil ? "" : "max-[1179px]:hidden"}`}>{label}</span>
+                  {hijos && <span className={`text-xs opacity-70 ${etiquetas ? "" : "hidden"} ${movil ? "" : "max-[1179px]:hidden"}`} aria-hidden>{act ? "▾" : "▸"}</span>}
+                  {insignia && pendientes > 0 && (
+                    <span
+                      className={`flex h-5 min-w-5 items-center justify-center rounded-full bg-green px-1.5 text-[11px] font-bold text-navy ${
+                        // Con etiquetas va al final de la fila; en modo íconos, sobre la esquina del ícono.
+                        etiquetas ? "" : "absolute right-1 top-0.5"
+                      } ${movil ? "" : "max-[1179px]:absolute max-[1179px]:right-1 max-[1179px]:top-0.5"}`}
+                    >
+                      {pendientes}
+                    </span>
+                  )}
+                </Link>
+                {hijos && act && etiquetas && (
+                  <div className={`mb-1 ml-[25px] flex flex-col gap-0.5 border-l border-white/[.16] pl-3 ${movil ? "" : "max-[1179px]:hidden"}`}>
+                    {hijos.map((h) => (
+                      <Link
+                        key={h.href}
+                        href={h.href}
+                        onClick={() => setAbierto(false)}
+                        aria-current={activo(h.href) ? "page" : undefined}
+                        className={`flex h-9 items-center whitespace-nowrap rounded-sm px-2.5 text-[13px] font-semibold no-underline hover:bg-white/10 hover:text-white ${activo(h.href) ? "text-white" : "text-on-navy-2"}`}
+                      >
+                        {h.label}
+                      </Link>
+                    ))}
+                  </div>
                 )}
-              </Link>
+              </div>
             );
           })}
           <Link href="/" title="Ver tienda" className="mt-2 flex h-11 min-w-12 flex-none items-center gap-3 whitespace-nowrap rounded-sm px-3.5 text-sm font-semibold text-on-navy-2 no-underline hover:bg-white/10 hover:text-white">
@@ -188,7 +241,26 @@ export function MarcoAdmin({ nombre, pendientes, children }: { nombre: string; p
           </span>
         </header>
         <div className="flex-1 overflow-y-auto overflow-x-hidden print:overflow-visible">
-          <div className="mx-auto max-w-[1440px] px-[clamp(16px,3vw,32px)] pb-[72px] pt-[clamp(16px,2.5vw,28px)]">{children}</div>
+          <div className="mx-auto max-w-[1440px] px-[clamp(16px,3vw,32px)] pb-[72px] pt-[clamp(16px,2.5vw,28px)]">
+            {grupo && (
+              <nav aria-label={grupo.label} className="no-scrollbar -mx-1 mb-4 flex gap-1 overflow-x-auto px-1 print:hidden">
+                {grupo.hijos!.map((h) => {
+                  const a = activo(h.href);
+                  return (
+                    <Link
+                      key={h.href}
+                      href={h.href}
+                      aria-current={a ? "page" : undefined}
+                      className={`flex h-10 flex-none items-center whitespace-nowrap rounded-full px-4 text-sm font-semibold no-underline ${a ? "bg-navy text-white" : "bg-white text-navy shadow-[inset_0_0_0_1.5px_var(--border)] hover:bg-navy-50"}`}
+                    >
+                      {h.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
+            {children}
+          </div>
         </div>
       </div>
     </div>
