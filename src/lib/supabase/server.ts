@@ -1,8 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 
 /** Cliente de Supabase para Server Components y Server Actions, con la sesión del usuario. */
 export async function createClient() {
+  // Todo lo que usa la sesión se resuelve al pedir la página (no en el prefetch del App Shell):
+  // así Supabase y las pantallas pueden usar la hora actual (Date.now) sin romper el render.
+  await connection();
   const cookieStore = await cookies();
   return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     cookies: {

@@ -406,8 +406,8 @@ export async function configuracionAdmin() {
 
 /** Ventas confirmadas desde el 1 de enero del año pasado (cubre todos los períodos del reporte). */
 export async function datosReportes() {
+  const { supabase } = await exigirAdmin(); // primero la sesión: la hora solo se lee al pedir la página
   const desde = `${new Date().getFullYear() - 1}-01-01T00:00:00Z`;
-  const { supabase } = await exigirAdmin();
   const [{ data: pedidos, error }, inventario] = await Promise.all([
     supabase
       .from("pedidos")

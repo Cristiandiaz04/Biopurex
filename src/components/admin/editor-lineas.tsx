@@ -10,7 +10,7 @@ import { boton } from "./ui";
 export type Linea = { clave: string; varianteId: string; cantidad: string; valor: string };
 
 let contador = 0;
-export const lineaVacia = (): Linea => ({ clave: `l${Date.now()}-${contador++}`, varianteId: "", cantidad: "1", valor: "" });
+export const lineaVacia = (): Linea => ({ clave: `l${contador++}`, varianteId: "", cantidad: "1", valor: "" });
 
 /**
  * Líneas por variante. modo "costo": el admin escribe el costo (compras).
