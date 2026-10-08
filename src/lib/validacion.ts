@@ -63,13 +63,23 @@ export function validarEnvio(d: DatosEnvio): Errores<DatosEnvio> {
   return e;
 }
 
+/** Contraseña nueva: 8 caracteres o más, con letras y números. null si está bien. */
+export function problemaContrasena(s: string): string | null {
+  if (s.length < 8) return "La contraseña debe tener al menos 8 caracteres";
+  if (s.length > 72) return "La contraseña es demasiado larga";
+  if (!/[A-Za-zÁÉÍÓÚáéíóúÑñ]/.test(s) || !/[0-9]/.test(s)) return "Usa letras y números en tu contraseña";
+  return null;
+}
+
 export type DatosCuenta = { nombre: string; correo: string; contrasena: string };
 
 export function validarRegistro(d: DatosCuenta, registro: boolean): Errores<DatosCuenta> {
   const e: Errores<DatosCuenta> = {};
   if (registro && d.nombre.trim().length < 2) e.nombre = "Ingresa tu nombre";
   if (!CORREO.test(d.correo.trim())) e.correo = "Ingresa un correo válido";
-  if (d.contrasena.length < 8) e.contrasena = "La contraseña debe tener al menos 8 caracteres";
+  // Al registrarse se exige la regla completa; al entrar, solo que no esté vacía (contraseñas viejas).
+  const p = registro ? problemaContrasena(d.contrasena) : d.contrasena.length < 8 ? "La contraseña debe tener al menos 8 caracteres" : null;
+  if (p) e.contrasena = p;
   return e;
 }
 

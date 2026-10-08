@@ -37,12 +37,22 @@ describe("validarEnvio", () => {
 
 describe("validarRegistro", () => {
   it("exige nombre solo al registrarse", () => {
-    const d = { nombre: "", correo: "jose@correo.com", contrasena: "12345678" };
+    const d = { nombre: "", correo: "jose@correo.com", contrasena: "clave1234" };
     expect(hayErrores(validarRegistro(d, false))).toBe(false);
     expect(validarRegistro(d, true).nombre).toBe("Ingresa tu nombre");
   });
   it("contraseña de al menos 8", () => {
     expect(validarRegistro({ nombre: "José", correo: "jose@correo.com", contrasena: "1234" }, true).contrasena).toBeDefined();
+  });
+});
+
+describe("problemaContrasena", () => {
+  it("exige letras y números al registrarse", () => {
+    expect(validarRegistro({ nombre: "José", correo: "jose@correo.com", contrasena: "12345678" }, true).contrasena).toBe("Usa letras y números en tu contraseña");
+    expect(validarRegistro({ nombre: "José", correo: "jose@correo.com", contrasena: "limpieza2026" }, true).contrasena).toBeUndefined();
+  });
+  it("al entrar no bloquea contraseñas viejas de solo números", () => {
+    expect(validarRegistro({ nombre: "", correo: "jose@correo.com", contrasena: "12345678" }, false).contrasena).toBeUndefined();
   });
 });
 

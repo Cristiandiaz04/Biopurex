@@ -158,60 +158,61 @@ export default async function Inicio() {
         </ol>
       </section>
 
-      {galon && litro && <ProductoEstrella galon={galon} litro={litro} />}
-
-      {/* Categorías */}
-      <section className={`${contenedor} pt-[clamp(40px,6vw,80px)]`}>
-        <div className="mb-6 flex items-end justify-between gap-4">
-          <Titulo>Categorías</Titulo>
-          <VerTodo href="/catalogo" />
-        </div>
-        <div className={grid4}>
-          {categorias.filter((c) => productos.some((p) => p.cat === c.id)).map((c) => (
-            <Link
-              key={c.id}
-              href={`/catalogo?cat=${c.id}`}
-              className={`relative flex aspect-[1/1.05] flex-col justify-between overflow-hidden rounded-lg p-[clamp(14px,1.6vw,22px)] no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-2 ${
-                c.oscura ? "bg-graphite" : c.tinte ? "" : "bg-surface"
-              }`}
-              style={c.tinte ? { background: `color-mix(in srgb, ${aromaVar(c.tinte)} 14%, var(--bg))` } : undefined}
-            >
-              <span className={`font-display relative z-[1] max-w-[9ch] text-[clamp(20px,2.1vw,30px)] leading-none ${c.oscura ? "text-white" : "text-navy"}`}>
-                {c.nombre}
-              </span>
-              <span className={`relative z-[1] text-[13px] font-semibold ${c.oscura ? "text-on-dark-2" : "text-text-2"}`}>
-                {productos.filter((p) => p.cat === c.id).length} productos
-              </span>
-              <div className="drop-product absolute -bottom-[3%] -right-[4%] h-[72%] w-[70%]">
-                <Image src={c.img ? `/img/${c.img}.webp` : (productos.find((p) => p.cat === c.id)?.variantes[0]?.img ?? "/img/logo.png")} alt="" fill sizes="(max-width: 899px) 30vw, 200px" className="object-contain" />
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* Explora por aroma */}
-      <section className={`${contenedor} pt-[clamp(40px,6vw,80px)]`}>
-        <Titulo className="mb-5">Explora por aroma</Titulo>
-        <div className="no-scrollbar flex snap-x snap-mandatory gap-1 overflow-x-auto pb-2 pt-1">
-          {AROMA_IDS.map((a) => (
-            <Link
-              key={a}
-              href={`/catalogo?aroma=${a}`}
-              className="flex w-24 flex-none snap-start flex-col items-center gap-2.5 rounded-md px-1 py-2.5 no-underline transition-colors hover:bg-surface"
-            >
-              <span
-                className="size-16 rounded-full"
-                style={{ background: aromaVar(a), boxShadow: `inset 0 0 0 7px color-mix(in srgb, ${aromaVar(a)} 45%, var(--white))` }}
-              />
-              <span className="text-center text-[13px] font-semibold leading-tight">{AROMAS[a]}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* Filas de productos: se editan en el panel (Configuración → Página de inicio) */}
+      {/* Bloques y filas de productos: se editan en el panel (Configuración → Página de inicio) */}
       {secciones.map((sec) => {
+        if (sec.tipo === "estrella") return galon && litro ? <ProductoEstrella key={sec.id} galon={galon} litro={litro} /> : null;
+        if (sec.tipo === "categorias")
+          return (
+          <section key={sec.id} className={`${contenedor} pt-[clamp(40px,6vw,80px)]`}>
+            <div className="mb-6 flex items-end justify-between gap-4">
+              <Titulo>{sec.titulo}</Titulo>
+              <VerTodo href="/catalogo" />
+            </div>
+            <div className={grid4}>
+              {categorias.filter((c) => productos.some((p) => p.cat === c.id)).map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/catalogo?cat=${c.id}`}
+                  className={`relative flex aspect-[1/1.05] flex-col justify-between overflow-hidden rounded-lg p-[clamp(14px,1.6vw,22px)] no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-2 ${
+                    c.oscura ? "bg-graphite" : c.tinte ? "" : "bg-surface"
+                  }`}
+                  style={c.tinte ? { background: `color-mix(in srgb, ${aromaVar(c.tinte)} 14%, var(--bg))` } : undefined}
+                >
+                  <span className={`font-display relative z-[1] max-w-[9ch] text-[clamp(20px,2.1vw,30px)] leading-none ${c.oscura ? "text-white" : "text-navy"}`}>
+                    {c.nombre}
+                  </span>
+                  <span className={`relative z-[1] text-[13px] font-semibold ${c.oscura ? "text-on-dark-2" : "text-text-2"}`}>
+                    {productos.filter((p) => p.cat === c.id).length} productos
+                  </span>
+                  <div className="drop-product absolute -bottom-[3%] -right-[4%] h-[72%] w-[70%]">
+                    <Image src={c.img ? `/img/${c.img}.webp` : (productos.find((p) => p.cat === c.id)?.variantes[0]?.img ?? "/img/logo.png")} alt="" fill sizes="(max-width: 899px) 30vw, 200px" className="object-contain" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+          );
+        if (sec.tipo === "aromas")
+          return (
+          <section key={sec.id} className={`${contenedor} pt-[clamp(40px,6vw,80px)]`}>
+            <Titulo className="mb-5">{sec.titulo}</Titulo>
+            <div className="no-scrollbar flex snap-x snap-mandatory gap-1 overflow-x-auto pb-2 pt-1">
+              {AROMA_IDS.map((a) => (
+                <Link
+                  key={a}
+                  href={`/catalogo?aroma=${a}`}
+                  className="flex w-24 flex-none snap-start flex-col items-center gap-2.5 rounded-md px-1 py-2.5 no-underline transition-colors hover:bg-surface"
+                >
+                  <span
+                    className="size-16 rounded-full"
+                    style={{ background: aromaVar(a), boxShadow: `inset 0 0 0 7px color-mix(in srgb, ${aromaVar(a)} 45%, var(--white))` }}
+                  />
+                  <span className="text-center text-[13px] font-semibold leading-tight">{AROMAS[a]}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+          );
         const enlace = sec.categoriaId ? `/catalogo?cat=${sec.categoriaId}` : "/catalogo";
         const tarjetas = (
           <div className={grid4}>

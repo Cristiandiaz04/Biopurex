@@ -11,7 +11,7 @@ async function Inicio() {
   const [secciones, opciones, categorias] = await Promise.all([listarSeccionesInicio(), opcionesVariantes(), listarCategoriasAdmin()]);
   return (
     <>
-      <TituloPagina titulo="Página de inicio" sub="Las filas de productos del inicio: qué se exhibe, en qué orden y con qué título. Van después de «Explora por aroma».">
+      <TituloPagina titulo="Página de inicio" sub="Lo que se ve en el inicio después de «Cómo trabajamos»: bloques y filas de productos, en este orden.">
         <a href="/" target="_blank" rel="noopener noreferrer" className={`${boton.secundario} no-underline`}>
           <ExternalLink size={16} aria-hidden />
           Ver el inicio

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { obtenerZonas } from "@/lib/datos/catalogo";
 import { resolverZona } from "@/lib/envio";
 import { createClient } from "@/lib/supabase/server";
-import { soloDigitos, validarEnvio, type DatosEnvio, type Errores } from "@/lib/validacion";
+import { soloDigitos, validarEnvio, type DatosEnvio, type Errores, problemaContrasena } from "@/lib/validacion";
 
 export type ResultadoForm = { ok?: string; error?: string; errores?: Record<string, string> };
 
@@ -93,7 +93,8 @@ export async function cambiarContrasena(_: ResultadoForm, fd: FormData): Promise
   if (!user) return { error: "El enlace venció. Pide uno nuevo desde “¿Olvidaste tu contraseña?”." };
   const a = String(fd.get("contrasena") ?? "");
   const b = String(fd.get("confirmar") ?? "");
-  if (a.length < 8) return { errores: { contrasena: "Mínimo 8 caracteres" } };
+  const problema = problemaContrasena(a);
+  if (problema) return { errores: { contrasena: problema } };
   if (a !== b) return { errores: { confirmar: "Las contraseñas no coinciden" } };
   const { error } = await supabase.auth.updateUser({ password: a });
   if (error) return { error: "No pudimos cambiar la contraseña. Intenta con otra." };

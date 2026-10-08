@@ -51,6 +51,9 @@ from (values
     obj_description('public._crear_pedido(uuid, jsonb, jsonb, jsonb, boolean, text)'::regprocedure, 'pg_proc') like 'v0010%'),
   ('0011_inicio_editable',
     to_regclass('public.inicio_secciones') is not null
-    and to_regclass('public.inicio_productos') is not null)
+    and to_regclass('public.inicio_productos') is not null),
+  ('0012_seguridad_inicio_fijo',
+    to_regclass('public.intentos_descuento') is not null
+    and exists (select 1 from public.inicio_secciones where modo = 'estrella'))
 ) as t(migracion, corrida)
 order by migracion;

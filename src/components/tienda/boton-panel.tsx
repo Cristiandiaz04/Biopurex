@@ -1,58 +1,52 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LayoutDashboard } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 
 const CLAVE = "bpx-rol";
+const VIGENCIA = 10 * 60_000; // con la misma sesión, se vuelve a preguntar cada 10 minutos
 
 /**
  * Botón "Panel" del encabezado de la tienda: solo para cuentas admin.
- * El encabezado es estático (cacheado), así que el rol se consulta en el navegador
- * y se guarda por sesión para no repetir la consulta en cada página.
+ * El encabezado es estático (cacheado), así que el rol se pregunta a /api/rol desde el navegador.
  */
 export function BotonPanel({ movil }: { movil?: boolean }) {
   const [admin, setAdmin] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
-    const supabase = createClient();
     let vivo = true;
-
-    async function revisar() {
-      const { data } = await supabase.auth.getSession();
-      const uid = data.session?.user.id;
-      if (!uid) {
-        if (vivo) setAdmin(false);
+    // La cookie de sesión de Supabase cambia al entrar o salir: sin ella no hay admin y,
+    // con ella, la respuesta guardada vale mientras sea la misma sesión.
+    const sesion = document.cookie.split("; ").find((c) => /^sb-[^=]+-auth-token(.0)?=/.test(c));
+    if (!sesion) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sin sesión no hay que preguntar
+      setAdmin(false);
+      return;
+    }
+    const huella = sesion.slice(-24);
+    try {
+      const [en, h, valor] = (sessionStorage.getItem(CLAVE) ?? "").split("|");
+      if (h === huella && Date.now() - Number(en) < VIGENCIA) {
+        setAdmin(valor === "1");
         return;
       }
-      try {
-        const guardado = sessionStorage.getItem(CLAVE);
-        if (guardado?.startsWith(uid + ":")) {
-          if (vivo) setAdmin(guardado.endsWith(":admin"));
-          return;
-        }
-      } catch {}
-      const { data: perfil } = await supabase.from("perfiles").select("rol").eq("id", uid).single();
-      const rol = perfil?.rol ?? "cliente";
-      try {
-        sessionStorage.setItem(CLAVE, `${uid}:${rol}`);
-      } catch {}
-      if (vivo) setAdmin(rol === "admin");
-    }
-
-    revisar();
-    const { data: sub } = supabase.auth.onAuthStateChange(() => {
-      try {
-        sessionStorage.removeItem(CLAVE);
-      } catch {}
-      revisar();
-    });
+    } catch {}
+    fetch("/api/rol", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : { admin: false }))
+      .then((r: { admin: boolean }) => {
+        try {
+          sessionStorage.setItem(CLAVE, `${Date.now()}|${huella}|${r.admin ? 1 : 0}`);
+        } catch {}
+        if (vivo) setAdmin(r.admin);
+      })
+      .catch(() => {});
     return () => {
       vivo = false;
-      sub.subscription.unsubscribe();
     };
-  }, []);
+  }, [pathname]);
 
   if (!admin) return null;
   if (movil)

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { ArrowDown, ArrowUp, ChevronDown, Eye, EyeOff, Plus, Trash2, X } from "lucide-react";
-import { eliminarSeccion, guardarSeccion, moverSeccion, type DatosSeccion } from "@/acciones/inicio";
+import { eliminarSeccion, guardarFija, guardarSeccion, moverSeccion, type DatosSeccion } from "@/acciones/inicio";
 import { MensajeError } from "@/components/ui/campo";
 import { prefijoCategoria } from "@/lib/catalogo";
 import type { CategoriaAdmin } from "@/lib/datos/admin";
@@ -17,15 +17,26 @@ const MODOS = [
   ["nuevos", "Nuevos (automático)", "Los productos marcados como «Nuevo» en su ficha."],
 ] as const;
 
+/** Bloques fijos del diseño: se ocultan u ordenan, pero su contenido no se edita aquí. */
+const FIJAS: Record<string, string> = {
+  estrella: "Bloque del Desinfectante Multiusos (galón y litro) con su foto grande.",
+  categorias: "Tarjetas de las categorías que tienen productos.",
+  aromas: "Fila de círculos de colores para buscar por aroma.",
+};
+
 const vacia = (): DatosSeccion => ({ titulo: "", descripcion: "", modo: "manual", cantidad: 4, tema: "claro", categoriaId: "", activa: true, variantes: [] });
 
 export function EditorInicio({ secciones, opciones, categorias }: { secciones: SeccionAdmin[]; opciones: OpcionVariante[]; categorias: CategoriaAdmin[] }) {
   const [nueva, setNueva] = useState(false);
   return (
     <div className="flex flex-col gap-4">
-      {secciones.map((s, i) => (
+      {secciones.map((s, i) =>
+        FIJAS[s.modo] ? (
+          <TarjetaFija key={s.id} seccion={s} primera={i === 0} ultima={i === secciones.length - 1} />
+        ) : (
         <EditorSeccion key={s.id} inicial={s} opciones={opciones} categorias={categorias} primera={i === 0} ultima={i === secciones.length - 1} />
-      ))}
+        ),
+      )}
       {nueva ? (
         <EditorSeccion opciones={opciones} categorias={categorias} cerrar={() => setNueva(false)} />
       ) : (
@@ -249,6 +260,64 @@ function EditorSeccion({
           </div>
         </div>
       )}
+    </Tarjeta>
+  );
+}
+
+function TarjetaFija({ seccion: s, primera, ultima }: { seccion: SeccionAdmin; primera: boolean; ultima: boolean }) {
+  const router = useRouter();
+  const [titulo, setTitulo] = useState(s.titulo);
+  const [error, setError] = useState<string | null>(null);
+  const [pendiente, iniciar] = useTransition();
+  const correr = (fn: () => Promise<{ error?: string }>) =>
+    iniciar(async () => {
+      setError(null);
+      const r = await fn();
+      if (r.error) return setError(r.error);
+      router.refresh();
+    });
+  const editableTitulo = s.modo !== "estrella";
+
+  return (
+    <Tarjeta className={`overflow-hidden ${s.activa ? "" : "opacity-70"}`}>
+      <div className="flex flex-wrap items-center gap-2.5 px-4 py-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            {editableTitulo ? (
+              <input
+                value={titulo}
+                onChange={(e) => setTitulo(e.target.value)}
+                onBlur={() => titulo.trim() !== s.titulo && correr(() => guardarFija(s.id, titulo, s.activa))}
+                maxLength={60}
+                aria-label="Título del bloque"
+                className="h-9 min-w-0 max-w-[260px] rounded-sm border-[1.5px] border-transparent bg-transparent px-1.5 text-[15px] font-bold text-navy outline-none hover:border-line focus:border-navy"
+              />
+            ) : (
+              <span className="px-1.5 text-[15px] font-bold">{s.titulo}</span>
+            )}
+            <Chip chico className="bg-navy-50 text-navy">Bloque fijo</Chip>
+          </div>
+          <div className="px-1.5 text-xs text-text-2">{FIJAS[s.modo]}</div>
+        </div>
+        <button
+          type="button"
+          disabled={pendiente}
+          onClick={() => correr(() => guardarFija(s.id, titulo, !s.activa))}
+          className={s.activa ? boton.secundario : boton.primario}
+        >
+          {s.activa ? <EyeOff size={16} aria-hidden /> : <Eye size={16} aria-hidden />}
+          {s.activa ? "Ocultar" : "Mostrar"}
+        </button>
+        <div className="flex gap-1">
+          <button type="button" disabled={primera || pendiente} onClick={() => correr(() => moverSeccion(s.id, "arriba"))} aria-label="Subir bloque" className="flex size-10 items-center justify-center rounded-sm text-text-2 hover:bg-surface disabled:opacity-30">
+            <ArrowUp size={16} aria-hidden />
+          </button>
+          <button type="button" disabled={ultima || pendiente} onClick={() => correr(() => moverSeccion(s.id, "abajo"))} aria-label="Bajar bloque" className="flex size-10 items-center justify-center rounded-sm text-text-2 hover:bg-surface disabled:opacity-30">
+            <ArrowDown size={16} aria-hidden />
+          </button>
+        </div>
+      </div>
+      {error && <div className="px-4 pb-3"><MensajeError>{error}</MensajeError></div>}
     </Tarjeta>
   );
 }

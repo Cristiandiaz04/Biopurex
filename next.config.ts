@@ -1,5 +1,25 @@
 import type { NextConfig } from "next";
 
+// Política de contenido: de dónde puede cargar la página scripts, imágenes y conexiones.
+// Supabase (datos, fotos y chat en vivo) y la barra de Vercel en los links de prueba.
+const SUPABASE = "https://dunejdzectfkwakpxnvj.supabase.co";
+const dev = process.env.NODE_ENV !== "production";
+const CSP = [
+  "default-src 'self'",
+  // Next mete scripts en línea para hidratar la página; en desarrollo además usa eval.
+  `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""} https://vercel.live`,
+  "style-src 'self' 'unsafe-inline'",
+  `img-src 'self' data: blob: ${SUPABASE} https://vercel.live https://vercel.com`,
+  "font-src 'self' data: https://vercel.live",
+  `connect-src 'self' ${SUPABASE} wss://dunejdzectfkwakpxnvj.supabase.co https://vercel.live wss://ws-us3.pusher.com`,
+  "frame-src https://vercel.live",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  ...(dev ? [] : ["upgrade-insecure-requests"]),
+].join("; ");
+
 const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
@@ -16,7 +36,9 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: [
-          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "Content-Security-Policy", value: CSP },
+          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },

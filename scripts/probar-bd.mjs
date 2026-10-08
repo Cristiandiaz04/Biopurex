@@ -42,7 +42,7 @@ for (const archivo of readdirSync(dir).filter((x) => x.endsWith(".sql")).sort())
 }
 // Las migraciones idempotentes se pueden volver a correr (p. ej. si Supabase cortó por un bloqueo).
 // (en orden: 0007 redefine _crear_pedido de 0005)
-for (const archivo of ["0005_compras_cotizaciones_facturas.sql", "0006_materia_prima_produccion.sql", "0007_zonas_envio.sql", "0008_categorias_codigos.sql", "0009_stock_libre_problema_pago.sql", "0010_municipio_ciudad_libre.sql", "0011_inicio_editable.sql"]) {
+for (const archivo of ["0005_compras_cotizaciones_facturas.sql", "0006_materia_prima_produccion.sql", "0007_zonas_envio.sql", "0008_categorias_codigos.sql", "0009_stock_libre_problema_pago.sql", "0010_municipio_ciudad_libre.sql", "0011_inicio_editable.sql", "0012_seguridad_inicio_fijo.sql"]) {
   await run(readFileSync(dir + "/" + archivo, "utf8"));
   ok(true, archivo + " se puede volver a correr");
 }
@@ -124,8 +124,10 @@ await como(AD, () => q("insert into public.codigos_descuento (codigo, porcentaje
 await como(AD, () => q("insert into public.codigos_descuento (codigo, porcentaje, cliente_id) values ('SOLOCLINICA', 15, $1)", [U2]));
 const vd = await como(U1, () => q("select * from public.validar_descuento('mayoreo10', 300)"));
 ok(Number(vd[0].porcentaje) === 10, "validar código (minúsculas) → 10 %");
-try { await como(U1, () => q("select * from public.validar_descuento('MAYOREO10', 100)")); ok(false, "mínimo"); } catch (e) { ok(/desde L. 200/.test(e.message), "respeta la compra mínima: " + e.message); }
-try { await como(U1, () => q("select * from public.validar_descuento('SOLOCLINICA', 300)")); ok(false, "código ajeno"); } catch (e) { ok(/no es válido para tu cuenta/.test(e.message), "código de otro cliente rechazado"); }
+const vMin = (await como(U1, () => q("select * from public.validar_descuento('MAYOREO10', 100)")))[0];
+ok(vMin.codigo === null && /desde L. 200/.test(vMin.error), "respeta la compra mínima: " + vMin.error);
+const vAj = (await como(U1, () => q("select * from public.validar_descuento('SOLOCLINICA', 300)")))[0];
+ok(vAj.codigo === null && /no es válido para tu cuenta/.test(vAj.error), "código de otro cliente rechazado");
 try { await como(U1, () => q("select * from public.codigos_descuento")); const r = await como(U1, () => q("select count(*)::int n from public.codigos_descuento")); ok(r[0].n === 0, "un cliente no puede listar los códigos"); } catch { ok(true, "un cliente no puede listar los códigos"); }
 const cod3 = await como(U1, async () => (await q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb,false,'MAYOREO10') c", [items([[vLav, 3]]), contacto, dirSPS]))[0].c);
 const p3 = (await q("select * from public.pedidos where codigo=$1", [cod3]))[0];
@@ -134,6 +136,7 @@ ok((await q("select usos from public.codigos_descuento where codigo='MAYOREO10'"
 await como(AD, () => q("select public.admin_cancelar_pedido($1,'Prueba')", [p3.id]));
 ok((await q("select usos from public.codigos_descuento where codigo='MAYOREO10'"))[0].usos === 0, "cancelar devuelve el uso del código");
 // Abonos
+await como(U2, () => q("select * from public.validar_descuento('SOLOCLINICA', 300)"));
 await como(U2, async () => (await q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb,false,'SOLOCLINICA') c", [items([[vLav, 2]]), JSON.stringify({ nombre: "Clínica Santa Rosa", correo: "clinica@correo.com", telefono: "25501234" }), dirSPS]))[0].c);
 const s0 = Number((await q("select saldo from public.perfiles where id=$1", [U2]))[0].saldo);
 ok(s0 === 221.5, `crédito con descuento suma 190 − 28.50 + 60 = ${s0}`);
@@ -266,15 +269,29 @@ ok(pAl.municipio === "San Pedro Sula" && pAl.ciudad === "Aldea El Carmen", "la a
 try { await como(U1, () => q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb)", [items([[vLav, 1]]), contacto, JSON.stringify({ departamento: "Cortés", municipio: "San Pedro Sula", ciudad: "", colonia: "Centro", direccion: "Casa 3" })])); ok(false, "sin ciudad"); } catch (e) { ok(/ciudad, aldea/.test(e.message), "la ciudad/aldea es obligatoria"); }
 
 // ---- 0011: inicio editable ----
-const secs = await q("select s.titulo, s.activa, count(p.variante_id)::int n from public.inicio_secciones s left join public.inicio_productos p on p.seccion_id = s.id group by s.id order by s.orden");
+const secs = await q("select s.titulo, s.activa, count(p.variante_id)::int n from public.inicio_secciones s left join public.inicio_productos p on p.seccion_id = s.id where s.modo in ('manual','mas_vendidos','nuevos') group by s.id order by s.orden");
 ok(secs.length === 3 && secs[0].titulo === "Más vendidos" && secs[0].n === 4 && secs[1].n === 4 && secs[2].activa === false, "secciones iniciales del inicio: " + secs.map((x) => `${x.titulo} (${x.n})`).join(", "));
 await run("set role anon;");
 const mv = await q("select * from public.inicio_mas_vendidos(4)");
-const visibles = (await q("select count(*)::int n from public.inicio_secciones"))[0].n;
+const visibles = (await q("select count(*)::int n from public.inicio_secciones where modo in ('manual','mas_vendidos','nuevos')"))[0].n;
 await run("reset role;");
 ok(mv.length > 0 && Number(mv[0].unidades) >= Number(mv[mv.length - 1].unidades), `más vendidos para el público: ${mv.length} variantes, sin datos de clientes`);
 ok(visibles === 2, "el público solo ve las secciones activas");
 try { await como(U1, () => q("insert into public.inicio_secciones (titulo) values ('Hack')")); ok(false, "cliente creó sección"); } catch { ok(true, "un cliente no puede editar el inicio"); }
+
+// ---- 0012: seguridad ----
+try { await run("set role anon;"); await q("insert into public.configuracion (id, banco, tipo_cuenta, numero_cuenta, titular) values (false,'x','x','x','x')"); ok(false, "anon escribió"); } catch { ok(true, "anon no puede escribir en ninguna tabla"); } finally { await run("reset role;"); }
+try { await como(U1, () => q("truncate public.pedidos cascade")); ok(false, "truncate"); } catch { ok(true, "nadie puede TRUNCATE (ignora RLS)"); }
+// Fuerza bruta de códigos: 10 fallos y se bloquea (también con un código válido).
+await como(AD, () => q("insert into public.codigos_descuento (codigo, porcentaje) values ('SECRETO50', 50)"));
+for (let k = 0; k < 10; k++) await como(U2, () => q("select * from public.validar_descuento($1, 500)", ["ADIVINA" + k]));
+const bloq = (await como(U2, () => q("select * from public.validar_descuento('SECRETO50', 500)")))[0];
+ok(bloq.codigo === null && /Demasiados intentos/.test(bloq.error), "10 intentos fallidos bloquean a ese cliente 15 minutos");
+const ok1 = (await como(U1, () => q("select * from public.validar_descuento('SECRETO50', 500)")))[0];
+ok(ok1.codigo === "SECRETO50", "otro cliente no queda bloqueado");
+try { await como(U2, () => q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb,false,'SECRETO50')", [items([[vLav, 1]]), contacto, dirSPS2])); ok(false, "crear_pedido con código sin validar"); } catch (e) { ok(/Aplica el código/.test(e.message), "crear_pedido no acepta códigos sin validar antes (no se pueden adivinar)"); }
+const fijas = await q("select modo from public.inicio_secciones where modo in ('estrella','categorias','aromas') order by orden");
+ok(fijas.map((x) => x.modo).join() === "estrella,categorias,aromas", "inicio: tarjetas fijas estrella, categorías y aromas");
 
 console.log(fallas ? `\n${fallas} FALLAS` : "\nTodo OK");
 await db.close();

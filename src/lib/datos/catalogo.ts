@@ -183,8 +183,11 @@ export async function obtenerZonas(): Promise<ZonasEnvio> {
 // ---------------------------------------------------------------------------
 
 export type ModoSeccion = "manual" | "mas_vendidos" | "nuevos";
+/** "productos" = fila de tarjetas; las otras son bloques fijos del diseño que se pueden ocultar u ordenar. */
+export type TipoSeccion = "productos" | "estrella" | "categorias" | "aromas";
 export type SeccionInicio = {
   id: string;
+  tipo: TipoSeccion;
   titulo: string;
   descripcion: string | null;
   tema: "claro" | "oscuro";
@@ -222,23 +225,28 @@ export async function obtenerInicio(): Promise<SeccionInicio[]> {
 
   if (error) {
     console.error("[obtenerInicio]", error.message);
-    return INICIO_ANTERIOR.map((s, i) => ({
+    return [...FIJAS_ANTERIOR, ...INICIO_ANTERIOR.map((s, i) => ({
       id: `anterior-${i}`,
+      tipo: "productos" as const,
       ...s,
       items: s.slugs.flatMap((slug) => {
         const p = productos.find((x) => x.slug === slug);
         return p ? [{ slug, clave: p.variantes[0].clave }] : [];
       }),
-    }));
+    }))];
   }
 
   const necesitaVentas = data.some((s) => s.modo === "mas_vendidos");
+  const sinFijas = !data.some((s) => ["estrella", "categorias", "aromas"].includes(s.modo as string));
   const ventas = necesitaVentas ? ((await sb.rpc("inicio_mas_vendidos", { p_limite: 24 })).data ?? []) : [];
 
-  return data
+  const secciones: SeccionInicio[] = data
     .map((s) => {
+      const tipo: TipoSeccion = s.modo === "estrella" || s.modo === "categorias" || s.modo === "aromas" ? s.modo : "productos";
       let items: { slug: string; clave: string }[] = [];
-      if (s.modo === "manual") {
+      if (tipo !== "productos") {
+        // Bloque fijo: no lleva tarjetas.
+      } else if (s.modo === "manual") {
         items = (s.inicio_productos as { variante_id: string; orden: number }[])
           .sort((a, b) => a.orden - b.orden)
           .flatMap((x) => {
@@ -256,6 +264,7 @@ export async function obtenerInicio(): Promise<SeccionInicio[]> {
       }
       return {
         id: s.id as string,
+        tipo,
         titulo: s.titulo as string,
         descripcion: (s.descripcion as string) ?? null,
         tema: s.tema === "oscuro" ? ("oscuro" as const) : ("claro" as const),
@@ -263,5 +272,16 @@ export async function obtenerInicio(): Promise<SeccionInicio[]> {
         items: items.slice(0, s.cantidad as number),
       };
     })
-    .filter((s) => s.items.length > 0);
+    .filter((s) => s.tipo !== "productos" || s.items.length > 0);
+  return sinFijas ? [...FIJAS_ANTERIOR, ...secciones] : secciones;
 }
+
+const FIJAS_ANTERIOR: SeccionInicio[] = (["estrella", "categorias", "aromas"] as const).map((tipo) => ({
+  id: `fija-${tipo}`,
+  tipo,
+  titulo: tipo === "categorias" ? "Categorías" : tipo === "aromas" ? "Explora por aroma" : "Producto estrella",
+  descripcion: null,
+  tema: "claro",
+  categoriaId: null,
+  items: [],
+}));

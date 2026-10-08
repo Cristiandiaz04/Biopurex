@@ -476,7 +476,7 @@ export type SeccionAdmin = {
   id: string;
   titulo: string;
   descripcion: string;
-  modo: "manual" | "mas_vendidos" | "nuevos";
+  modo: "manual" | "mas_vendidos" | "nuevos" | "estrella" | "categorias" | "aromas";
   cantidad: number;
   tema: "claro" | "oscuro";
   categoriaId: string;

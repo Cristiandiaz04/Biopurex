@@ -42,6 +42,10 @@ export async function guardarSeccion(d: DatosSeccion): Promise<Resultado & { id?
   if (Object.keys(errores).length) return { error: "Revisa los campos marcados.", errores };
 
   const { supabase } = await exigirAdmin();
+  if (d.id) {
+    const { data: actual } = await supabase.from("inicio_secciones").select("modo").eq("id", d.id).maybeSingle();
+    if (!actual || !MODOS.includes(actual.modo)) return { error: "Esta sección no se edita así" };
+  }
   const fila = {
     titulo,
     descripcion: descripcion || null,
@@ -76,10 +80,23 @@ export async function guardarSeccion(d: DatosSeccion): Promise<Resultado & { id?
   return { ok: "Sección guardada", id };
 }
 
+/** Bloques fijos (Producto estrella, Categorías, Explora por aroma): solo título y visible. */
+export async function guardarFija(id: string, titulo: string, activa: boolean): Promise<Resultado> {
+  const t = titulo.trim();
+  if (!UUID.test(id)) return { error: "Sección no válida" };
+  if (t.length < 2 || t.length > 60) return { error: "Escribe el título (2 a 60 letras)", errores: { titulo: "2 a 60 letras" } };
+  const { supabase } = await exigirAdmin();
+  const { error } = await supabase.from("inicio_secciones").update({ titulo: t, activa: Boolean(activa) }).eq("id", id).in("modo", ["estrella", "categorias", "aromas"]);
+  if (error) return fallo(error);
+  listo();
+  return { ok: activa ? "Visible en el inicio" : "Oculta en el inicio" };
+}
+
 export async function eliminarSeccion(id: string): Promise<Resultado> {
   if (!UUID.test(id)) return { error: "Sección no válida" };
   const { supabase } = await exigirAdmin();
-  const { error } = await supabase.from("inicio_secciones").delete().eq("id", id);
+  // Los bloques fijos no se borran (se ocultan).
+  const { error } = await supabase.from("inicio_secciones").delete().eq("id", id).in("modo", MODOS);
   if (error) return fallo(error);
   listo();
   return { ok: "Sección eliminada" };

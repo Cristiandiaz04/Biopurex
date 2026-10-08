@@ -74,6 +74,8 @@ export async function validarCodigo(codigo: string, subtotal: number): Promise<R
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("validar_descuento", { p_codigo: c, p_subtotal: subtotal });
   if (error) return { error: error.code === "P0001" ? error.message : "No pudimos validar el código" };
-  const fila = (data as { codigo: string; porcentaje: number | string }[])[0];
+  const fila = (data as { codigo: string | null; porcentaje: number | string | null; error?: string | null }[])[0];
+  // Desde 0012 los errores vienen en la fila (así cada intento fallido queda contado).
+  if (!fila || fila.error || !fila.codigo) return { error: fila?.error ?? "El código no existe o ya no está activo" };
   return { codigo: fila.codigo, porcentaje: Number(fila.porcentaje) };
 }
