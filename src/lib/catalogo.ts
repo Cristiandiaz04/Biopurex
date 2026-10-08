@@ -157,8 +157,6 @@ export function relacionados(p: Producto, productos: Producto[], n = 4) {
   return [...misma, ...extra].slice(0, n);
 }
 
-export const DESTACADOS = ["desinfectante-galon", "biowash", "jabon-manos", "biosoft"];
-export const DESTACADOS_AUTO = ["biofoam-galon", "shampoo-carros-galon", "llantas-galon", "tableros-galon"];
 
 const normalizar = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 

@@ -48,6 +48,9 @@ from (values
   ('0009_stock_libre_problema_pago',
     exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'pedidos' and column_name = 'problema_pago')),
   ('0010_municipio_ciudad_libre',
-    obj_description('public._crear_pedido(uuid, jsonb, jsonb, jsonb, boolean, text)'::regprocedure, 'pg_proc') like 'v0010%')
+    obj_description('public._crear_pedido(uuid, jsonb, jsonb, jsonb, boolean, text)'::regprocedure, 'pg_proc') like 'v0010%'),
+  ('0011_inicio_editable',
+    to_regclass('public.inicio_secciones') is not null
+    and to_regclass('public.inicio_productos') is not null)
 ) as t(migracion, corrida)
 order by migracion;

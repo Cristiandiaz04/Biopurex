@@ -177,3 +177,91 @@ export async function obtenerZonas(): Promise<ZonasEnvio> {
     gratisDesde: c.data.envio_gratis_desde == null ? null : Number(c.data.envio_gratis_desde),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Inicio: secciones de productos editables desde el panel (0011)
+// ---------------------------------------------------------------------------
+
+export type ModoSeccion = "manual" | "mas_vendidos" | "nuevos";
+export type SeccionInicio = {
+  id: string;
+  titulo: string;
+  descripcion: string | null;
+  tema: "claro" | "oscuro";
+  categoriaId: string | null;
+  /** Tarjetas a mostrar: producto + aroma (clave de la variante). */
+  items: { slug: string; clave: string }[];
+};
+
+/** Lo que mostraba el inicio antes de que existieran las secciones (sin la migración 0011). */
+const INICIO_ANTERIOR = [
+  { titulo: "Más vendidos", descripcion: null, tema: "claro" as const, categoriaId: null, slugs: ["desinfectante-galon", "biowash", "jabon-manos", "biosoft"] },
+  {
+    titulo: "Línea automotriz",
+    descripcion: "Shampoo, abrillantadores y desengrasantes para tu vehículo o tu carwash, en 740 ml, galón y 20 litros.",
+    tema: "oscuro" as const,
+    categoriaId: "auto",
+    slugs: ["biofoam-galon", "shampoo-carros-galon", "llantas-galon", "tableros-galon"],
+  },
+];
+
+/** Secciones activas del inicio con sus tarjetas ya resueltas. Misma caché que el catálogo. */
+export async function obtenerInicio(): Promise<SeccionInicio[]> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("catalogo");
+
+  const productos = await obtenerProductos();
+  const porVariante = new Map(productos.flatMap((p) => p.variantes.map((v) => [v.id, { slug: p.slug, clave: v.clave }] as const)));
+  const sb = clientePublico();
+  const { data, error } = await sb
+    .from("inicio_secciones")
+    .select("id, titulo, descripcion, modo, cantidad, tema, categoria_id, inicio_productos(variante_id, orden)")
+    .eq("activa", true)
+    .order("orden");
+
+  if (error) {
+    console.error("[obtenerInicio]", error.message);
+    return INICIO_ANTERIOR.map((s, i) => ({
+      id: `anterior-${i}`,
+      ...s,
+      items: s.slugs.flatMap((slug) => {
+        const p = productos.find((x) => x.slug === slug);
+        return p ? [{ slug, clave: p.variantes[0].clave }] : [];
+      }),
+    }));
+  }
+
+  const necesitaVentas = data.some((s) => s.modo === "mas_vendidos");
+  const ventas = necesitaVentas ? ((await sb.rpc("inicio_mas_vendidos", { p_limite: 24 })).data ?? []) : [];
+
+  return data
+    .map((s) => {
+      let items: { slug: string; clave: string }[] = [];
+      if (s.modo === "manual") {
+        items = (s.inicio_productos as { variante_id: string; orden: number }[])
+          .sort((a, b) => a.orden - b.orden)
+          .flatMap((x) => {
+            const v = porVariante.get(x.variante_id);
+            return v ? [v] : [];
+          });
+      } else if (s.modo === "mas_vendidos") {
+        items = (ventas as { variante_id: string }[]).flatMap((x) => {
+          const v = porVariante.get(x.variante_id);
+          return v ? [v] : [];
+        });
+      } else {
+        // Nuevos: productos marcados como "Nuevo" (una tarjeta por producto).
+        items = productos.filter((p) => p.insignias.includes("nuevo")).map((p) => ({ slug: p.slug, clave: p.variantes[0].clave }));
+      }
+      return {
+        id: s.id as string,
+        titulo: s.titulo as string,
+        descripcion: (s.descripcion as string) ?? null,
+        tema: s.tema === "oscuro" ? ("oscuro" as const) : ("claro" as const),
+        categoriaId: (s.categoria_id as string) ?? null,
+        items: items.slice(0, s.cantidad as number),
+      };
+    })
+    .filter((s) => s.items.length > 0);
+}

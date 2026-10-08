@@ -42,7 +42,7 @@ for (const archivo of readdirSync(dir).filter((x) => x.endsWith(".sql")).sort())
 }
 // Las migraciones idempotentes se pueden volver a correr (p. ej. si Supabase cortó por un bloqueo).
 // (en orden: 0007 redefine _crear_pedido de 0005)
-for (const archivo of ["0005_compras_cotizaciones_facturas.sql", "0006_materia_prima_produccion.sql", "0007_zonas_envio.sql", "0008_categorias_codigos.sql", "0009_stock_libre_problema_pago.sql", "0010_municipio_ciudad_libre.sql"]) {
+for (const archivo of ["0005_compras_cotizaciones_facturas.sql", "0006_materia_prima_produccion.sql", "0007_zonas_envio.sql", "0008_categorias_codigos.sql", "0009_stock_libre_problema_pago.sql", "0010_municipio_ciudad_libre.sql", "0011_inicio_editable.sql"]) {
   await run(readFileSync(dir + "/" + archivo, "utf8"));
   ok(true, archivo + " se puede volver a correr");
 }
@@ -264,6 +264,17 @@ const codAldea = await como(U1, async () => (await q("select public.crear_pedido
 const pAl = (await q("select municipio, ciudad, envio from public.pedidos where codigo=$1", [codAldea]))[0];
 ok(pAl.municipio === "San Pedro Sula" && pAl.ciudad === "Aldea El Carmen", "la aldea/ciudad es libre y el municipio sale de la lista");
 try { await como(U1, () => q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb)", [items([[vLav, 1]]), contacto, JSON.stringify({ departamento: "Cortés", municipio: "San Pedro Sula", ciudad: "", colonia: "Centro", direccion: "Casa 3" })])); ok(false, "sin ciudad"); } catch (e) { ok(/ciudad, aldea/.test(e.message), "la ciudad/aldea es obligatoria"); }
+
+// ---- 0011: inicio editable ----
+const secs = await q("select s.titulo, s.activa, count(p.variante_id)::int n from public.inicio_secciones s left join public.inicio_productos p on p.seccion_id = s.id group by s.id order by s.orden");
+ok(secs.length === 3 && secs[0].titulo === "Más vendidos" && secs[0].n === 4 && secs[1].n === 4 && secs[2].activa === false, "secciones iniciales del inicio: " + secs.map((x) => `${x.titulo} (${x.n})`).join(", "));
+await run("set role anon;");
+const mv = await q("select * from public.inicio_mas_vendidos(4)");
+const visibles = (await q("select count(*)::int n from public.inicio_secciones"))[0].n;
+await run("reset role;");
+ok(mv.length > 0 && Number(mv[0].unidades) >= Number(mv[mv.length - 1].unidades), `más vendidos para el público: ${mv.length} variantes, sin datos de clientes`);
+ok(visibles === 2, "el público solo ve las secciones activas");
+try { await como(U1, () => q("insert into public.inicio_secciones (titulo) values ('Hack')")); ok(false, "cliente creó sección"); } catch { ok(true, "un cliente no puede editar el inicio"); }
 
 console.log(fallas ? `\n${fallas} FALLAS` : "\nTodo OK");
 await db.close();

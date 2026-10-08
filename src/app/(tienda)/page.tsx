@@ -3,8 +3,8 @@ import Link from "next/link";
 import { Award, ChevronRight, Leaf, Sparkles, Truck } from "lucide-react";
 import { ProductoEstrella } from "@/components/tienda/inicio/producto-estrella";
 import { TarjetaProducto } from "@/components/tienda/tarjeta-producto";
-import { AROMAS, AROMA_IDS, DESTACADOS, DESTACADOS_AUTO, aromaVar, type Producto } from "@/lib/catalogo";
-import { obtenerCategorias, obtenerProductos } from "@/lib/datos/catalogo";
+import { AROMAS, AROMA_IDS, aromaVar } from "@/lib/catalogo";
+import { obtenerCategorias, obtenerInicio, obtenerProductos } from "@/lib/datos/catalogo";
 
 const BOTELLAS: [string, number, number][] = [
   ["des_cit_lt", 10, 74],
@@ -51,9 +51,8 @@ function VerTodo({ href }: { href: string }) {
 }
 
 export default async function Inicio() {
-  const [productos, categorias] = await Promise.all([obtenerProductos(), obtenerCategorias()]);
+  const [productos, categorias, secciones] = await Promise.all([obtenerProductos(), obtenerCategorias(), obtenerInicio()]);
   const porSlug = (s: string) => productos.find((p) => p.slug === s);
-  const lista = (slugs: string[]) => slugs.map(porSlug).filter((p): p is Producto => !!p);
   const galon = porSlug("desinfectante-galon");
   const litro = porSlug("desinfectante-litro");
   return (
@@ -211,44 +210,53 @@ export default async function Inicio() {
         </div>
       </section>
 
-      {/* Más vendidos */}
-      <section className={`${contenedor} py-[clamp(40px,6vw,80px)]`}>
-        <div className="mb-6 flex items-end justify-between gap-4">
-          <Titulo>Más vendidos</Titulo>
-          <VerTodo href="/catalogo" />
-        </div>
-        <div className={grid4}>
-          {lista(DESTACADOS).map((p) => (
-            <TarjetaProducto key={p.slug} producto={p} />
-          ))}
-        </div>
-      </section>
-
-      {/* Línea automotriz */}
-      <section className="bg-graphite text-white">
-        <div className={`${contenedor} py-[clamp(48px,7vw,96px)]`}>
-          <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
-            <div className="max-w-[560px]">
-              <span className="brand-line mb-3" />
-              <h2 className="font-display text-h2 mb-3 mt-0">Línea automotriz</h2>
-              <p className="m-0 text-pretty leading-[1.55] text-on-dark-2">
-                Shampoo, abrillantadores y desengrasantes para tu vehículo o tu carwash, en 740 ml, galón y 20 litros.
-              </p>
-            </div>
-            <Link
-              href="/catalogo?cat=auto"
-              className="inline-flex h-[52px] items-center gap-2 rounded-full bg-white px-6 font-semibold text-graphite no-underline transition-transform active:scale-[.98]"
-            >
-              Ver línea automotriz <ChevronRight size={20} aria-hidden />
-            </Link>
-          </div>
+      {/* Filas de productos: se editan en el panel (Configuración → Página de inicio) */}
+      {secciones.map((sec) => {
+        const enlace = sec.categoriaId ? `/catalogo?cat=${sec.categoriaId}` : "/catalogo";
+        const tarjetas = (
           <div className={grid4}>
-            {lista(DESTACADOS_AUTO).map((p) => (
-              <TarjetaProducto key={p.slug} producto={p} />
-            ))}
+            {sec.items.map(({ slug, clave }) => {
+              const p = porSlug(slug);
+              return p ? <TarjetaProducto key={`${slug}-${clave}`} producto={p} clave={clave} /> : null;
+            })}
           </div>
-        </div>
-      </section>
+        );
+        if (sec.tema === "oscuro") {
+          const cat = categorias.find((c) => c.id === sec.categoriaId);
+          return (
+            <section key={sec.id} className="bg-graphite text-white">
+              <div className={`${contenedor} py-[clamp(48px,7vw,96px)]`}>
+                <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+                  <div className="max-w-[560px]">
+                    <span className="brand-line mb-3" />
+                    <h2 className="font-display text-h2 mb-3 mt-0">{sec.titulo}</h2>
+                    {sec.descripcion && <p className="m-0 text-pretty leading-[1.55] text-on-dark-2">{sec.descripcion}</p>}
+                  </div>
+                  <Link
+                    href={enlace}
+                    className="inline-flex h-[52px] items-center gap-2 rounded-full bg-white px-6 font-semibold text-graphite no-underline transition-transform active:scale-[.98]"
+                  >
+                    {cat ? `Ver ${cat.corto.toLowerCase()}` : "Ver todo"} <ChevronRight size={20} aria-hidden />
+                  </Link>
+                </div>
+                {tarjetas}
+              </div>
+            </section>
+          );
+        }
+        return (
+          <section key={sec.id} className={`${contenedor} py-[clamp(40px,6vw,80px)]`}>
+            <div className="mb-6 flex items-end justify-between gap-4">
+              <div className="flex flex-col gap-2">
+                <Titulo>{sec.titulo}</Titulo>
+                {sec.descripcion && <p className="m-0 max-w-[60ch] text-pretty leading-[1.55] text-text-2">{sec.descripcion}</p>}
+              </div>
+              <VerTodo href={enlace} />
+            </div>
+            {tarjetas}
+          </section>
+        );
+      })}
 
       {/* Mayoreo */}
       <section className={`${contenedor} py-[clamp(40px,6vw,80px)]`}>

@@ -467,3 +467,41 @@ export async function listarZonasAdmin(): Promise<ZonasEnvio> {
     gratisDesde: c.data.envio_gratis_desde == null ? null : n(c.data.envio_gratis_desde),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Inicio editable (0011)
+// ---------------------------------------------------------------------------
+
+export type SeccionAdmin = {
+  id: string;
+  titulo: string;
+  descripcion: string;
+  modo: "manual" | "mas_vendidos" | "nuevos";
+  cantidad: number;
+  tema: "claro" | "oscuro";
+  categoriaId: string;
+  activa: boolean;
+  orden: number;
+  variantes: string[];
+};
+
+export async function listarSeccionesInicio(): Promise<SeccionAdmin[]> {
+  const { supabase } = await exigirAdmin();
+  const { data, error } = await supabase
+    .from("inicio_secciones")
+    .select("id, titulo, descripcion, modo, cantidad, tema, categoria_id, activa, orden, inicio_productos(variante_id, orden)")
+    .order("orden");
+  if (error) throw new Error(error.message);
+  return data.map((s) => ({
+    id: s.id,
+    titulo: s.titulo,
+    descripcion: s.descripcion ?? "",
+    modo: s.modo,
+    cantidad: s.cantidad,
+    tema: s.tema,
+    categoriaId: s.categoria_id ?? "",
+    activa: s.activa,
+    orden: s.orden,
+    variantes: (s.inicio_productos as { variante_id: string; orden: number }[]).sort((a, b) => a.orden - b.orden).map((x) => x.variante_id),
+  }));
+}

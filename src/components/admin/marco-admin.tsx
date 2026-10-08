@@ -53,6 +53,7 @@ const NAV: Item[] = [
     hijos: [
       { href: "/admin/configuracion", label: "General" },
       { href: "/admin/envios", label: "Zonas de envío" },
+      { href: "/admin/inicio", label: "Página de inicio" },
     ],
   },
 ];
