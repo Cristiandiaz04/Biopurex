@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ControlesReporte, PERIODOS } from "@/components/admin/reportes-controles";
+import { ControlesReporte } from "@/components/admin/reportes-controles";
+import { PERIODOS } from "@/lib/documentos";
 import { Chip, CHIP_TIPO, nombreAroma, PuntoAroma, td, th, TituloPagina } from "@/components/admin/ui";
 import { aromaVar, esAroma } from "@/lib/catalogo";
 import { ETIQUETA_TIPO } from "@/lib/datos/admin";

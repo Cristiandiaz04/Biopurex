@@ -11,6 +11,7 @@ import { lempiras } from "@/lib/formato";
 import { EditorLineas, lineaVacia, totalLineas, type Linea } from "./editor-lineas";
 import { entradaAdmin, Modal } from "./modal";
 import { boton, Chip, CHIP_TIPO, td, th, Vacio } from "./ui";
+import { CHIP_COT } from "@/lib/documentos";
 
 const ETIQUETA: Record<TipoCliente, string> = { normal: "Normal", contra_entrega: "Pago contra entrega", credito: "Crédito" };
 const REGLA: Record<TipoCliente, string> = {
@@ -18,11 +19,6 @@ const REGLA: Record<TipoCliente, string> = {
   contra_entrega: "Contra entrega: el pedido queda «Confirmado» y el cobro se registra al entregar.",
   credito: "Crédito: el pedido queda «Confirmado» y se suma a su saldo.",
 };
-export const CHIP_COT = {
-  emitida: ["Vigente", "bg-navy-50 text-navy"],
-  convertida: ["Convertida", "bg-success-50 text-success"],
-  vencida: ["Vencida", "bg-error-50 text-error"],
-} as const;
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 const fecha = (d: string) => d.split("-").reverse().join("/");
 

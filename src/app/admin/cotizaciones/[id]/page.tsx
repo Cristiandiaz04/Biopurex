@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { AccionesCotizacion, CHIP_COT } from "@/components/admin/cotizaciones";
+import { AccionesCotizacion } from "@/components/admin/cotizaciones";
+import { CHIP_COT } from "@/lib/documentos";
 import { Emisor, Hoja, tdDoc, thDoc } from "@/components/admin/hoja";
 import { Chip, TituloPagina } from "@/components/admin/ui";
 import { configuracionAdmin, obtenerCotizacion, opcionesVariantes } from "@/lib/datos/admin-docs";

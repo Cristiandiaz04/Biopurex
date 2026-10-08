@@ -3,13 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Download, Printer } from "lucide-react";
 import { boton } from "./ui";
-
-export const PERIODOS = [
-  ["30", "Últimos 30 días"],
-  ["mes", "Mes en curso"],
-  ["90", "Últimos 90 días"],
-  ["anio", "Año a la fecha"],
-] as const;
+import { PERIODOS } from "@/lib/documentos";
 
 export function ControlesReporte({ csv, nombre, conPeriodo }: { csv: (string | number)[][]; nombre: string; conPeriodo: boolean }) {
   const router = useRouter();

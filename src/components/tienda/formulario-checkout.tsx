@@ -84,7 +84,7 @@ export function FormularioCheckout({
   const [validando, iniciarValidacion] = useTransition();
 
   const zona = resolverZona(municipios, datos.departamento, datos.municipio, datos.ciudad);
-  const envio = zona ? costoEnvio(zona.municipio.costo, subtotal, gratisDesde) : null;
+  const envio = zona && lineas.length ? costoEnvio(zona.municipio.costo, subtotal, gratisDesde) : null;
   const falta = faltaParaGratis(subtotal, gratisDesde);
   const guardada = direcciones.find((x) => x.id === elegida);
   const elegidaFuera = guardada
