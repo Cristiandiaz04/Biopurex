@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { AROMAS, productoPorSlug, type Producto, type Variante } from "@/lib/catalogo";
+import { AROMAS, type Producto, type Variante } from "@/lib/catalogo";
+import { useCatalogo } from "./catalogo-provider";
 
 export type ItemCarrito = { slug: string; clave: string; cantidad: number };
 
@@ -17,13 +18,14 @@ type Ctx = {
   agregar: (slug: string, clave: string, cantidad: number) => void;
   cambiar: (slug: string, clave: string, delta: number) => void;
   quitar: (slug: string, clave: string) => void;
+  vaciar: () => void;
   aviso: string | null;
   avisar: (msg: string) => void;
 };
 
 const CarritoCtx = createContext<Ctx | null>(null);
 
-// El carrito vive en el navegador (localStorage) hasta que exista sesión (fase 2).
+// El carrito vive en el navegador (localStorage); el pedido se crea en Supabase al confirmar.
 // Store externo + useSyncExternalStore: sin desajustes de hidratación y sincronizado entre pestañas.
 const CLAVE_STORAGE = "bpx-carrito";
 const VACIO: ItemCarrito[] = [];
@@ -66,6 +68,7 @@ function suscribir(o: () => void) {
 const setItems = (f: (prev: ItemCarrito[]) => ItemCarrito[]) => escribir(f(leer()));
 
 export function CarritoProvider({ children }: { children: React.ReactNode }) {
+  const { porSlug } = useCatalogo();
   const items = useSyncExternalStore(suscribir, leer, () => VACIO);
   const [abierto, setAbierto] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -81,7 +84,7 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
 
   const agregar = useCallback(
     (slug: string, clave: string, cantidad: number) => {
-      const p = productoPorSlug(slug);
+      const p = porSlug(slug);
       if (!p) return;
       setItems((prev) => {
         const i = prev.findIndex((x) => x.slug === slug && x.clave === clave);
@@ -93,7 +96,7 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
       const v = p.variantes.find((x) => x.clave === clave);
       avisar(`Agregado al carrito: ${p.nombre}${v?.aroma ? " · " + AROMAS[v.aroma] : ""}`);
     },
-    [avisar],
+    [avisar, porSlug],
   );
 
   const cambiar = useCallback((slug: string, clave: string, delta: number) => {
@@ -108,9 +111,12 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
     setItems((prev) => prev.filter((x) => !(x.slug === slug && x.clave === clave)));
   }, []);
 
+  const vaciar = useCallback(() => setItems(() => []), []);
+
   const valor = useMemo<Ctx>(() => {
+    // Los artículos que ya no existen en el catálogo se ignoran.
     const lineas = items.flatMap((it) => {
-      const producto = productoPorSlug(it.slug);
+      const producto = porSlug(it.slug);
       const variante = producto?.variantes.find((x) => x.clave === it.clave);
       if (!producto || !variante) return [];
       return [{ ...it, producto, variante, total: (producto.precio ?? 0) * it.cantidad }];
@@ -125,10 +131,11 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
       agregar,
       cambiar,
       quitar,
+      vaciar,
       aviso,
       avisar,
     };
-  }, [items, abierto, agregar, cambiar, quitar, aviso, avisar]);
+  }, [items, abierto, agregar, cambiar, quitar, vaciar, aviso, avisar, porSlug]);
 
   return <CarritoCtx.Provider value={valor}>{children}</CarritoCtx.Provider>;
 }

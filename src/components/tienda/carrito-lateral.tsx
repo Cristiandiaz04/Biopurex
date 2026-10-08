@@ -4,12 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
 import { Check, ChevronRight, Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
-import { AROMAS, ENVIO, aromaVar } from "@/lib/catalogo";
+import { AROMAS, aromaVar } from "@/lib/catalogo";
 import { lempiras } from "@/lib/formato";
 import { useCarrito } from "./carrito-provider";
+import { useCatalogo } from "./catalogo-provider";
 
 export function CarritoLateral() {
   const { lineas, cantidad, subtotal, abierto, cerrar, cambiar, quitar } = useCarrito();
+  const { envio } = useCatalogo();
 
   useEffect(() => {
     if (!abierto) return;
@@ -139,12 +141,12 @@ export function CarritoLateral() {
               <div className="flex justify-between gap-3 text-sm">
                 <span className="text-text-2">Envío estimado</span>
                 <span className="text-right">
-                  {lempiras(ENVIO.sps)} SPS · {lempiras(ENVIO.resto)} resto del país
+                  {lempiras(envio.sps)} SPS · {lempiras(envio.resto)} resto del país
                 </span>
               </div>
               <div className="flex items-baseline justify-between">
                 <span className="font-bold">Total estimado</span>
-                <span className="text-xl font-bold">{lempiras(subtotal + ENVIO.sps)}</span>
+                <span className="text-xl font-bold">{lempiras(subtotal + envio.sps)}</span>
               </div>
               <Link
                 href="/checkout"

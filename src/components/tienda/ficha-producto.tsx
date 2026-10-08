@@ -6,17 +6,16 @@ import { useState } from "react";
 import { AlertTriangle, Check, Minus, Package, Plus, ShoppingBag, Truck } from "lucide-react";
 import {
   AVISO_SEGURIDAD,
-  ENVIO,
   aromaVar,
   categoria,
   esMayoreo,
   esOscuro,
-  productoPorSlug,
   varianteInicial,
   type Producto,
 } from "@/lib/catalogo";
 import { lempiras } from "@/lib/formato";
 import { useCarrito } from "./carrito-provider";
+import { useCatalogo } from "./catalogo-provider";
 import { Insignias, type InsigniaId } from "./insignias";
 import { TarjetaProducto } from "./tarjeta-producto";
 
@@ -37,6 +36,7 @@ export function FichaProducto({
   relacionados: Producto[];
 }) {
   const { agregar } = useCarrito();
+  const { porSlug, envio } = useCatalogo();
   const [clave, setClave] = useState(() => varianteInicial(p, claveInicial).clave);
   const [cantidad, setCantidad] = useState(1);
   const v = p.variantes.find((x) => x.clave === clave) ?? p.variantes[0];
@@ -189,7 +189,8 @@ export function FichaProducto({
                 <div role="list" className="grid grid-cols-[repeat(auto-fill,minmax(128px,1fr))] gap-2">
                   {p.hermanos.map((h) => {
                     const sel = h.slug === p.slug;
-                    const hp = productoPorSlug(h.slug)!;
+                    const hp = porSlug(h.slug);
+                    if (!hp) return null;
                     const mismoAroma = v.aroma && hp.variantes.some((x) => x.clave === v.clave);
                     return (
                       <Link
@@ -240,7 +241,7 @@ export function FichaProducto({
             <div className={`flex items-start gap-3 text-sm leading-normal ${th.fg2}`}>
               <Truck size={20} className={`flex-none ${th.fg}`} aria-hidden />
               <span>
-                Envío a todo Honduras · San Pedro Sula {lempiras(ENVIO.sps)} · resto del país {lempiras(ENVIO.resto)}{" "}
+                Envío a todo Honduras · San Pedro Sula {lempiras(envio.sps)} · resto del país {lempiras(envio.resto)}{" "}
                 <span className="opacity-80">(montos de ejemplo)</span>
               </span>
             </div>

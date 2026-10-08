@@ -3,16 +3,8 @@ import Link from "next/link";
 import { Award, ChevronRight, Leaf, Sparkles, Truck } from "lucide-react";
 import { ProductoEstrella } from "@/components/tienda/inicio/producto-estrella";
 import { TarjetaProducto } from "@/components/tienda/tarjeta-producto";
-import {
-  AROMAS,
-  AROMA_IDS,
-  CATEGORIAS,
-  DESTACADOS,
-  DESTACADOS_AUTO,
-  PRODUCTOS,
-  aromaVar,
-  productoPorSlug,
-} from "@/lib/catalogo";
+import { AROMAS, AROMA_IDS, CATEGORIAS, DESTACADOS, DESTACADOS_AUTO, aromaVar, type Producto } from "@/lib/catalogo";
+import { obtenerProductos } from "@/lib/datos/catalogo";
 
 const BOTELLAS: [string, number, number][] = [
   ["des_cit_lt", 10, 74],
@@ -58,7 +50,12 @@ function VerTodo({ href }: { href: string }) {
   );
 }
 
-export default function Inicio() {
+export default async function Inicio() {
+  const productos = await obtenerProductos();
+  const porSlug = (s: string) => productos.find((p) => p.slug === s);
+  const lista = (slugs: string[]) => slugs.map(porSlug).filter((p): p is Producto => !!p);
+  const galon = porSlug("desinfectante-galon");
+  const litro = porSlug("desinfectante-litro");
   return (
     <main>
       {/* Portada */}
@@ -162,7 +159,7 @@ export default function Inicio() {
         </ol>
       </section>
 
-      <ProductoEstrella />
+      {galon && litro && <ProductoEstrella galon={galon} litro={litro} />}
 
       {/* Categorías */}
       <section className={`${contenedor} pt-[clamp(40px,6vw,80px)]`}>
@@ -184,7 +181,7 @@ export default function Inicio() {
                 {c.nombre}
               </span>
               <span className={`relative z-[1] text-[13px] font-semibold ${c.oscura ? "text-on-dark-2" : "text-text-2"}`}>
-                {PRODUCTOS.filter((p) => p.cat === c.id).length} productos
+                {productos.filter((p) => p.cat === c.id).length} productos
               </span>
               <div className="drop-product absolute -bottom-[3%] -right-[4%] h-[72%] w-[70%]">
                 <Image src={`/img/${c.img}.webp`} alt="" fill sizes="(max-width: 899px) 30vw, 200px" className="object-contain" />
@@ -221,8 +218,8 @@ export default function Inicio() {
           <VerTodo href="/catalogo" />
         </div>
         <div className={grid4}>
-          {DESTACADOS.map((s) => (
-            <TarjetaProducto key={s} producto={productoPorSlug(s)!} />
+          {lista(DESTACADOS).map((p) => (
+            <TarjetaProducto key={p.slug} producto={p} />
           ))}
         </div>
       </section>
@@ -246,8 +243,8 @@ export default function Inicio() {
             </Link>
           </div>
           <div className={grid4}>
-            {DESTACADOS_AUTO.map((s) => (
-              <TarjetaProducto key={s} producto={productoPorSlug(s)!} />
+            {lista(DESTACADOS_AUTO).map((p) => (
+              <TarjetaProducto key={p.slug} producto={p} />
             ))}
           </div>
         </div>

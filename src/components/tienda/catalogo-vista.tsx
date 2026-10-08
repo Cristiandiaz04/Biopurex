@@ -16,6 +16,7 @@ import {
   type CategoriaId,
 } from "@/lib/catalogo";
 import { TarjetaProducto } from "./tarjeta-producto";
+import { useCatalogo } from "./catalogo-provider";
 
 const lista = (v: string | null) => (v ? v.split(",").filter(Boolean) : []);
 
@@ -24,6 +25,7 @@ export function CatalogoVista() {
   const router = useRouter();
   const pathname = usePathname();
   const [hojaAbierta, setHojaAbierta] = useState(false);
+  const { productos: todos } = useCatalogo();
 
   const catParam = sp.get("cat");
   const cat = CATEGORIAS.some((c) => c.id === catParam) ? (catParam as CategoriaId) : null;
@@ -34,9 +36,9 @@ export function CatalogoVista() {
   const oscuro = cat === "auto";
 
   const productos = useMemo(
-    () => buscarProductos({ cat, q, aromas, tamanos, orden }),
+    () => buscarProductos(todos, { cat, q, aromas, tamanos, orden }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [sp],
+    [sp, todos],
   );
 
   function actualizar(cambios: Record<string, string | string[] | null>) {

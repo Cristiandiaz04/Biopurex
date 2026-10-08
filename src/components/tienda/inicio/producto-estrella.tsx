@@ -4,26 +4,26 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ChevronRight } from "lucide-react";
-import { AROMAS, aromaVar, productoPorSlug, type AromaId } from "@/lib/catalogo";
+import { AROMAS, aromaVar, type AromaId, type Producto } from "@/lib/catalogo";
 
-const GALON = productoPorSlug("desinfectante-galon")!;
-const LITRO = productoPorSlug("desinfectante-litro")!;
-const AROMAS_DZ = GALON.variantes.map((x) => x.aroma!) as AromaId[];
-const img = (p: typeof GALON, a: AromaId) => p.variantes.find((x) => x.aroma === a)!.img;
+const img = (p: Producto, a: AromaId) => (p.variantes.find((x) => x.aroma === a) ?? p.variantes[0]).img;
 
 /** Sección "Producto estrella": el fondo toma el color del aroma y rota solo hasta que el usuario elige. */
-export function ProductoEstrella() {
-  const [aroma, setAroma] = useState<AromaId>("lavanda");
+export function ProductoEstrella({ galon: GALON, litro: LITRO }: { galon: Producto; litro: Producto }) {
+  const AROMAS_DZ = GALON.variantes.map((x) => x.aroma).filter((a): a is AromaId => !!a);
+  const [aroma, setAroma] = useState<AromaId>(AROMAS_DZ[0] ?? "lavanda");
   const pausado = useRef(false);
 
+  const total = AROMAS_DZ.length;
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || total < 2) return;
     const t = setInterval(() => {
       if (pausado.current || document.hidden) return;
-      setAroma((a) => AROMAS_DZ[(AROMAS_DZ.indexOf(a) + 1) % AROMAS_DZ.length]);
+      setAroma((a) => AROMAS_DZ[(AROMAS_DZ.indexOf(a) + 1) % total]);
     }, 3200);
     return () => clearInterval(t);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total]);
 
   return (
     <section

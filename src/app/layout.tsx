@@ -2,8 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { Anton, Inter } from "next/font/google";
 import { CarritoProvider } from "@/components/tienda/carrito-provider";
 import { AvisoCarrito, CarritoLateral } from "@/components/tienda/carrito-lateral";
+import { CatalogoProvider } from "@/components/tienda/catalogo-provider";
 import { Encabezado } from "@/components/tienda/encabezado";
 import { Pie } from "@/components/tienda/pie";
+import { obtenerConfiguracion, obtenerProductos } from "@/lib/datos/catalogo";
 import "./globals.css";
 
 const anton = Anton({ variable: "--font-anton", weight: "400", subsets: ["latin"], display: "swap" });
@@ -17,17 +19,20 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: "#1E2A5E" };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const [productos, conf] = await Promise.all([obtenerProductos(), obtenerConfiguracion()]);
   return (
     <html lang="es" className={`${anton.variable} ${inter.variable}`}>
       <body className="flex min-h-dvh flex-col">
-        <CarritoProvider>
-          <Encabezado />
-          <div className="flex flex-1 flex-col">{children}</div>
-          <Pie />
-          <CarritoLateral />
-          <AvisoCarrito />
-        </CarritoProvider>
+        <CatalogoProvider productos={productos} envio={{ sps: conf.envioSps, resto: conf.envioResto }}>
+          <CarritoProvider>
+            <Encabezado />
+            <div className="flex flex-1 flex-col">{children}</div>
+            <Pie />
+            <CarritoLateral />
+            <AvisoCarrito />
+          </CarritoProvider>
+        </CatalogoProvider>
       </body>
     </html>
   );
