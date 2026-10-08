@@ -39,6 +39,13 @@ export function CatalogoVista() {
     [sp, todos],
   );
 
+  // Cada aroma es su propia tarjeta; con filtro de aroma solo se muestran esos aromas.
+  const tarjetas = useMemo(
+    () => productos.flatMap((p) => p.variantes.filter((x) => !aromas.length || (x.aroma && aromas.includes(x.aroma))).map((x) => ({ p, clave: x.clave }))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [productos, sp],
+  );
+
   function actualizar(cambios: Record<string, string | string[] | null>) {
     const n = new URLSearchParams(sp.toString());
     for (const [k, val] of Object.entries(cambios)) {
@@ -98,7 +105,7 @@ export function CatalogoVista() {
           <span className="brand-line mb-3" />
           <h1 className="font-display text-h2 m-0">{titulo}</h1>
           <div className={`mt-2 text-sm ${th.fg2}`}>
-            {productos.length} {productos.length === 1 ? "producto" : "productos"}
+            {tarjetas.length} {tarjetas.length === 1 ? "producto" : "productos"}
           </div>
         </div>
 
@@ -151,14 +158,10 @@ export function CatalogoVista() {
           </div>
         )}
 
-        {productos.length > 0 ? (
+        {tarjetas.length > 0 ? (
           <div className="grid grid-cols-2 gap-3 min-[900px]:grid-cols-4 min-[900px]:gap-6">
-            {productos.map((p) => (
-              <TarjetaProducto
-                key={p.slug + aromas.join()}
-                producto={p}
-                claveInicial={aromas.find((a) => p.variantes.some((x) => x.aroma === a)) ?? null}
-              />
+            {tarjetas.map(({ p, clave }) => (
+              <TarjetaProducto key={`${p.slug}-${clave}`} producto={p} clave={clave} />
             ))}
           </div>
         ) : (
@@ -258,7 +261,7 @@ export function CatalogoVista() {
             Limpiar
           </button>
           <button type="button" onClick={() => setHojaAbierta(false)} className="h-[52px] flex-1 rounded-full bg-navy text-center font-semibold text-white">
-            Ver {productos.length} resultado{productos.length === 1 ? "" : "s"}
+            Ver {tarjetas.length} resultado{tarjetas.length === 1 ? "" : "s"}
           </button>
         </div>
       </div>

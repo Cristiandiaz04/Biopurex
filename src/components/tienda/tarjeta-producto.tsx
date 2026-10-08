@@ -2,17 +2,19 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
 import { Plus } from "lucide-react";
 import { AROMAS, aromaVar, esMayoreo, esOscuro, varianteInicial, type Producto } from "@/lib/catalogo";
 import { lempiras } from "@/lib/formato";
 import { useCarrito } from "./carrito-provider";
 import { Insignias, type InsigniaId } from "./insignias";
 
-export function TarjetaProducto({ producto: p, claveInicial }: { producto: Producto; claveInicial?: string | null }) {
+/**
+ * Tarjeta de un producto en UN aroma (en el catálogo cada aroma es su propia tarjeta).
+ * El aroma se cambia dentro de la ficha del producto, no aquí.
+ */
+export function TarjetaProducto({ producto: p, clave }: { producto: Producto; clave?: string | null }) {
   const { agregar } = useCarrito();
-  const [clave, setClave] = useState(() => varianteInicial(p, claveInicial).clave);
-  const v = p.variantes.find((x) => x.clave === clave) ?? p.variantes[0];
+  const v = varianteInicial(p, clave);
   const oscura = esOscuro(p);
   const tinte = v.aroma ?? p.tinte;
   const conAromas = p.variantes.length > 1;
@@ -27,14 +29,13 @@ export function TarjetaProducto({ producto: p, claveInicial }: { producto: Produ
   const fg = oscura ? "text-white" : "text-navy";
   const fg2 = oscura ? "text-on-dark-2" : "text-text-2";
   const anillo = oscura ? "var(--graphite-2)" : "var(--bg)";
-  const anilloSel = oscura ? "var(--white)" : "var(--navy)";
 
   return (
     <div
       className={`relative flex h-full flex-col rounded-lg transition-[background-color,transform,box-shadow] duration-500 hover:-translate-y-1 hover:shadow-2 ${fondo}`}
       style={{ "--aroma": tinte ? aromaVar(tinte) : undefined } as React.CSSProperties}
     >
-      <Link href={href} aria-label={`Ver ${p.nombre}`} className="relative block aspect-square rounded-t-lg">
+      <Link href={href} aria-label={`Ver ${p.nombre}${conAromas ? ` ${v.etiqueta}` : ""}`} className="relative block aspect-square rounded-t-lg">
         <div className="absolute inset-[12%_14%_6%]">
           <Image
             key={v.img}
@@ -55,36 +56,10 @@ export function TarjetaProducto({ producto: p, claveInicial }: { producto: Produ
           {p.nombre}
         </Link>
         {conAromas && (
-          <>
-            <div className={`mt-1.5 text-xs ${fg2}`}>
-              Elegir aroma: <strong className={fg}>{v.etiqueta}</strong>
-            </div>
-            <div role="radiogroup" aria-label="Elegir aroma" className="-mx-2 mb-0.5 flex flex-wrap">
-              {p.variantes.map((x) => {
-                const sel = x.clave === clave;
-                return (
-                  <button
-                    key={x.clave}
-                    type="button"
-                    role="radio"
-                    aria-checked={sel}
-                    aria-label={x.etiqueta}
-                    title={x.etiqueta}
-                    onClick={() => setClave(x.clave)}
-                    className="flex size-8 items-center justify-center rounded-full"
-                  >
-                    <span
-                      className="size-4 rounded-full transition-shadow"
-                      style={{
-                        background: x.aroma ? aromaVar(x.aroma) : undefined,
-                        boxShadow: sel ? `0 0 0 2px ${anillo}, 0 0 0 4px ${anilloSel}` : `0 0 0 1.5px ${anillo}`,
-                      }}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          </>
+          <Link href={href} tabIndex={-1} className={`mt-1 flex items-center gap-1.5 text-[13px] font-semibold no-underline ${fg}`}>
+            {v.aroma && <span className="size-3 flex-none rounded-full" style={{ background: aromaVar(v.aroma), boxShadow: `0 0 0 1.5px ${anillo}` }} />}
+            {v.etiqueta}
+          </Link>
         )}
         <Link href={href} tabIndex={-1} className="flex flex-1 flex-col gap-1 pr-11 no-underline">
           <span className={`text-[13px] ${fg2}`}>{p.tamano}</span>
