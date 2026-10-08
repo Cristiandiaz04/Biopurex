@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
-import { Box, LayoutDashboard, LogOut, Menu, PanelLeft, ShoppingBag, Store, Tag, Users, Wallet, X } from "lucide-react";
+import { BarChart3, Box, Building2, FileText, LayoutDashboard, LogOut, Menu, PanelLeft, Receipt, Settings, ShoppingBag, Store, Tag, Truck, Users, Wallet, X } from "lucide-react";
 import { cerrarSesion } from "@/acciones/acceso";
 
 const NAV = [
@@ -12,8 +12,14 @@ const NAV = [
   { href: "/admin/pedidos", label: "Pedidos", icono: ShoppingBag, insignia: true },
   { href: "/admin/clientes", label: "Clientes", icono: Users },
   { href: "/admin/productos", label: "Productos e inventario", icono: Box },
-  { href: "/admin/descuentos", label: "Descuentos", icono: Tag },
+  { href: "/admin/compras", label: "Compras", icono: Truck },
+  { href: "/admin/proveedores", label: "Proveedores", icono: Building2 },
+  { href: "/admin/cotizaciones", label: "Cotizaciones", icono: FileText },
+  { href: "/admin/facturas", label: "Facturas", icono: Receipt },
   { href: "/admin/cuentas", label: "Cuentas por cobrar", icono: Wallet },
+  { href: "/admin/descuentos", label: "Descuentos", icono: Tag },
+  { href: "/admin/reportes", label: "Reportes", icono: BarChart3 },
+  { href: "/admin/configuracion", label: "Configuración", icono: Settings },
 ];
 
 // Preferencia "menú plegado" (por navegador).

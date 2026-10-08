@@ -4,8 +4,10 @@ import { AlertTriangle, CheckCircle2, Info, XCircle } from "lucide-react";
 import { AccionesPedido } from "@/components/admin/acciones-pedido";
 import { ChatAdmin } from "@/components/admin/chat-admin";
 import { Comprobante } from "@/components/admin/comprobante";
+import { BotonFactura } from "@/components/admin/facturas";
 import { CabeceraTarjeta, Chip, CHIP_ESTADO, CHIP_TIPO, fechaCorta, nombreAroma, PuntoAroma, Tarjeta, td, th, TituloPagina } from "@/components/admin/ui";
 import { ETIQUETA_TIPO, FORMA_PAGO, obtenerPedidoAdmin } from "@/lib/datos/admin";
+import { facturaDePedido } from "@/lib/datos/admin-docs";
 import { lempiras } from "@/lib/formato";
 import { ETIQUETA_ESTADO, FLUJO } from "@/lib/pedidos";
 
@@ -15,6 +17,7 @@ async function Detalle({ params }: { params: PageProps<"/admin/pedidos/[codigo]"
   const { codigo } = await params;
   const p = await obtenerPedidoAdmin(decodeURIComponent(codigo).toUpperCase());
   if (!p) notFound();
+  const factura = await facturaDePedido(p.id);
 
   const unidades = p.items.reduce((s, i) => s + i.cantidad, 0);
   const enEspera = p.estado === "esperando_pago" || p.estado === "pago_en_revision";
@@ -146,6 +149,9 @@ async function Detalle({ params }: { params: PageProps<"/admin/pedidos/[codigo]"
               <div className="rounded-md bg-surface p-4 text-sm leading-normal text-text-2">
                 {p.tipoCliente === "credito" ? "Se cobra con el crédito del cliente." : "Se cobra al entregar."}
               </div>
+            )}
+            {p.estado !== "cancelado" && (
+              <BotonFactura pedidoId={p.id} codigoPedido={p.codigo} factura={factura} puede={["confirmado", "enviado", "entregado"].includes(p.estado)} />
             )}
           </Tarjeta>
           <Tarjeta className="p-4">

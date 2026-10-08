@@ -134,6 +134,39 @@ ok(Number((await q("select saldo from public.perfiles where id=$1", [U2]))[0].sa
 try { await como(U2, () => q("select public.admin_registrar_abono($1, 10, 'Efectivo', null)", [U2])); ok(false, "cliente abonó"); } catch { ok(true, "un cliente no puede registrarse abonos"); }
 ok((await como(U2, () => q("select count(*)::int n from public.abonos")))[0].n === 1, "el cliente ve sus abonos");
 
+// ---- 0005: compras, cotizaciones y facturas ----
+const prov = await como(AD, async () => (await q("insert into public.proveedores (nombre, condiciones) values ('Químicos del Norte', 'Crédito 30 días') returning id"))[0].id);
+const cmp = await como(AD, async () => (await q("insert into public.compras (proveedor_id, factura_proveedor) values ($1, '000-001-01-00000123') returning id, codigo", [prov]))[0]);
+ok(cmp.codigo === "CMP-0001", "compra numerada " + cmp.codigo);
+await como(AD, () => q("insert into public.compra_items (compra_id, variante_id, cantidad, costo_unitario) values ($1, $2, 50, 48.5)", [cmp.id, vLav]));
+const antes = (await q("select stock from public.variantes where id=$1", [vLav]))[0].stock;
+await como(AD, () => q("select public.admin_recibir_compra($1)", [cmp.id]));
+ok((await q("select stock from public.variantes where id=$1", [vLav]))[0].stock === antes + 50, "recibir compra suma 50 al stock");
+ok(Number((await q("select p.costo from public.productos p join public.variantes v on v.producto_id = p.id where v.id=$1", [vLav]))[0].costo) === 48.5, "actualiza el costo del producto");
+try { await como(AD, () => q("update public.compra_items set cantidad = 99 where compra_id = $1", [cmp.id])); ok(false, "editó compra recibida"); } catch (e) { ok(/no se puede modificar/.test(e.message), "una compra recibida no se edita"); }
+try { await como(AD, () => q("select public.admin_recibir_compra($1)", [cmp.id])); ok(false, "recibió dos veces"); } catch { ok(true, "no se recibe dos veces"); }
+// Cotización → pedido (U1 tiene dirección guardada)
+const cot = await como(AD, async () => (await q("insert into public.cotizaciones (cliente_id, valida_hasta, total) values ($1, current_date + 15, 190) returning id, codigo", [U1]))[0]);
+await como(AD, () => q("insert into public.cotizacion_items (cotizacion_id, variante_id, descripcion, sku, cantidad, precio_unitario) values ($1, $2, 'Desinfectante', 'X', 2, 95)", [cot.id, vLav]));
+const codCot = await como(AD, async () => (await q("select public.admin_convertir_cotizacion($1) c", [cot.id]))[0].c);
+const pc = (await q("select * from public.pedidos where codigo=$1", [codCot]))[0];
+ok(pc.usuario_id === U1 && pc.estado === "esperando_pago" && Number(pc.subtotal) === 190, "cotización → pedido del cliente con su regla (" + codCot + ")");
+ok((await q("select estado from public.cotizaciones where id=$1", [cot.id]))[0].estado === "convertida", "cotización queda convertida");
+try { await como(AD, () => q("select public.admin_convertir_cotizacion($1)", [cot.id])); ok(false, "convirtió dos veces"); } catch { ok(true, "no se convierte dos veces"); }
+// Facturas
+try { await como(AD, () => q("select public.admin_emitir_factura($1)", [pc.id])); ok(false, "facturó sin confirmar"); } catch (e) { ok(/confirmado/.test(e.message), "no se factura un pedido sin confirmar"); }
+await como(AD, () => q("select public.admin_confirmar_pago($1)", [pc.id]));
+const fac = await como(AD, async () => (await q("select public.admin_emitir_factura($1) c", [pc.id]))[0].c);
+const fr = (await q("select * from public.facturas where codigo=$1", [fac]))[0];
+ok(fac === "FAC-000001" && Number(fr.total) === 250 && Number(fr.gravado) === 217.39 && Number(fr.isv) === 32.61, `factura ${fac}: 250 = 217.39 + ISV 32.61`);
+try { await como(AD, () => q("select public.admin_emitir_factura($1)", [pc.id])); ok(false, "dos facturas"); } catch (e) { ok(/ya tiene factura/.test(e.message), "un pedido no se factura dos veces"); }
+ok((await como(U1, () => q("select count(*)::int n from public.facturas")))[0].n === 1, "el cliente ve su factura");
+ok((await como(U2, () => q("select count(*)::int n from public.facturas")))[0].n === 0, "otro cliente no la ve");
+try { await como(U1, () => q("select public.admin_emitir_factura($1)", [pc.id])); ok(false, "cliente facturó"); } catch { ok(true, "un cliente no puede emitir facturas"); }
+await como(AD, () => q("select public.admin_anular_factura($1, 'Error en RTN')", [fr.id]));
+const fac2 = await como(AD, async () => (await q("select public.admin_emitir_factura($1) c", [pc.id]))[0].c);
+ok(fac2 === "FAC-000002", "anulada → se puede volver a facturar (" + fac2 + ")");
+
 console.log(fallas ? `\n${fallas} FALLAS` : "\nTodo OK");
 await db.close();
 if (fallas) process.exit(1);

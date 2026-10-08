@@ -28,6 +28,11 @@ from (values
   ('0004_clientes_descuentos',
     to_regclass('public.abonos') is not null
     and to_regclass('public.codigos_descuento') is not null
-    and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'pedidos' and column_name = 'descuento'))
+    and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'pedidos' and column_name = 'descuento')),
+  ('0005_compras_cotizaciones_facturas',
+    to_regclass('public.compras') is not null
+    and to_regclass('public.cotizaciones') is not null
+    and to_regclass('public.facturas') is not null
+    and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'configuracion' and column_name = 'razon_social'))
 ) as t(migracion, corrida)
 order by migracion;
