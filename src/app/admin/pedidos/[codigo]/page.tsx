@@ -107,6 +107,12 @@ async function Detalle({ params }: { params: PageProps<"/admin/pedidos/[codigo]"
             <div className="flex justify-end px-4 py-3">
               <dl className="m-0 grid grid-cols-[auto_auto] gap-x-8 gap-y-1.5 text-sm tabular-nums">
                 <dt className="text-text-2">Subtotal</dt><dd className="m-0 text-right">{lempiras(p.subtotal)}</dd>
+                {p.descuento > 0 && (
+                  <>
+                    <dt className="text-success">Descuento {p.codigoDescuento} ({p.descuentoPorcentaje} %)</dt>
+                    <dd className="m-0 text-right text-success">−{lempiras(p.descuento)}</dd>
+                  </>
+                )}
                 <dt className="text-text-2">Envío · {p.zonaEnvio === "sps" ? "SPS" : "Resto del país"}</dt><dd className="m-0 text-right">{lempiras(p.envio)}</dd>
                 <dt className="text-base font-bold">Total</dt><dd className="m-0 text-right text-base font-bold">{lempiras(p.total)}</dd>
                 <dt className="text-xs text-text-2">ISV 15 % incluido</dt><dd className="m-0 text-right text-xs text-text-2">{lempiras(isv)}</dd>

@@ -3,8 +3,8 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { AlertTriangle, ChevronLeft, Copy, Check, MapPin } from "lucide-react";
-import { crearPedido } from "@/acciones/checkout";
+import { AlertTriangle, ChevronLeft, Copy, Check, MapPin, Tag, X } from "lucide-react";
+import { crearPedido, validarCodigo } from "@/acciones/checkout";
 import { Campo, MensajeError, Selector } from "@/components/ui/campo";
 import { AROMAS, aromaVar } from "@/lib/catalogo";
 import type { Configuracion } from "@/lib/datos/catalogo";
@@ -72,10 +72,27 @@ export function FormularioCheckout({
   const [guardar, setGuardar] = useState(direcciones.length === 0);
   const [enviando, iniciar] = useTransition();
   const [copiado, setCopiado] = useState<string | null>(null);
+  const [codigoTexto, setCodigoTexto] = useState("");
+  const [cupon, setCupon] = useState<{ codigo: string; porcentaje: number } | null>(null);
+  const [errorCupon, setErrorCupon] = useState<string | null>(null);
+  const [validando, iniciarValidacion] = useTransition();
 
   const zona = zonaEnvio(datos.departamento, datos.ciudad);
   const envio = zona === "sps" ? conf.envioSps : conf.envioResto;
   const normal = perfil.tipoCliente === "normal";
+  const descuento = cupon ? Math.round(subtotal * cupon.porcentaje) / 100 : 0;
+  const total = subtotal - descuento + envio;
+
+  function aplicarCodigo() {
+    setErrorCupon(null);
+    iniciarValidacion(async () => {
+      const r = await validarCodigo(codigoTexto, subtotal);
+      if ("error" in r) {
+        setCupon(null);
+        setErrorCupon(r.error);
+      } else setCupon(r);
+    });
+  }
 
   function cambiar<K extends keyof DatosEnvio>(k: K, v: string) {
     setDatos((d) => ({ ...d, [k]: v }));
@@ -120,6 +137,7 @@ export function FormularioCheckout({
         items: lineas.map((l) => ({ varianteId: l.variante.id, cantidad: l.cantidad })),
         datos,
         guardarDireccion: guardar && !elegida,
+        codigo: cupon?.codigo ?? null,
       });
       if ("codigo" in r) {
         vaciar();
@@ -318,10 +336,53 @@ export function FormularioCheckout({
                 <span className="text-text-2">Envío · {zona === "sps" ? "San Pedro Sula" : "Resto del país"}</span>
                 <span>{lempiras(envio)}</span>
               </div>
+              {cupon && (
+                <div className="flex justify-between text-success">
+                  <span>
+                    Descuento {cupon.codigo} ({cupon.porcentaje} %)
+                  </span>
+                  <span>−{lempiras(descuento)}</span>
+                </div>
+              )}
               <div className="flex items-baseline justify-between pt-1.5">
                 <span className="text-base font-bold">Total</span>
-                <span className="text-[22px] font-bold">{lempiras(subtotal + envio)}</span>
+                <span className="text-[22px] font-bold">{lempiras(total)}</span>
               </div>
+            </div>
+            <div className="flex flex-col gap-2 border-t border-line pt-4">
+              <span className="flex items-center gap-1.5 text-sm font-semibold">
+                <Tag size={16} aria-hidden />
+                Código de descuento
+              </span>
+              {cupon ? (
+                <div className="flex items-center justify-between gap-2 rounded-md bg-success-50 px-3.5 py-2.5 text-sm font-semibold text-success">
+                  {cupon.codigo} · {cupon.porcentaje} % aplicado
+                  <button type="button" onClick={() => { setCupon(null); setCodigoTexto(""); }} aria-label="Quitar código" className="flex size-8 items-center justify-center rounded-full hover:bg-white">
+                    <X size={16} aria-hidden />
+                  </button>
+                </div>
+              ) : (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    aplicarCodigo();
+                  }}
+                  className="flex gap-2"
+                >
+                  <input
+                    value={codigoTexto}
+                    onChange={(e) => setCodigoTexto(e.target.value.toUpperCase())}
+                    placeholder="Ej.: MAYOREO10"
+                    aria-label="Código de descuento"
+                    maxLength={30}
+                    className="h-11 min-w-0 flex-1 rounded-md border-[1.5px] border-line px-3.5 text-sm uppercase text-navy outline-none focus:border-navy"
+                  />
+                  <button type="submit" disabled={validando || !codigoTexto.trim()} className="h-11 rounded-full px-4 text-sm font-semibold shadow-[inset_0_0_0_1.5px_var(--navy)] disabled:opacity-50">
+                    {validando ? "…" : "Aplicar"}
+                  </button>
+                </form>
+              )}
+              {errorCupon && <span className="text-[13px] font-medium text-error">{errorCupon}</span>}
             </div>
             {error && <MensajeError>{error}</MensajeError>}
             {lineas.some((l) => l.variante.agotado) && (

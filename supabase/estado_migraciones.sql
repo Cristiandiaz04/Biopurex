@@ -24,6 +24,10 @@ from (values
     exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'productos' and column_name = 'costo')
     and exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
                 where n.nspname = 'public' and p.proname = 'admin_ajustar_stock')
-    and exists (select 1 from storage.buckets where id = 'productos'))
+    and exists (select 1 from storage.buckets where id = 'productos')),
+  ('0004_clientes_descuentos',
+    to_regclass('public.abonos') is not null
+    and to_regclass('public.codigos_descuento') is not null
+    and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'pedidos' and column_name = 'descuento'))
 ) as t(migracion, corrida)
 order by migracion;

@@ -76,6 +76,9 @@ export type DetallePedidoAdmin = {
   estado: EstadoPedido;
   tipoCliente: TipoCliente;
   subtotal: number;
+  descuento: number;
+  codigoDescuento: string | null;
+  descuentoPorcentaje: number | null;
   envio: number;
   total: number;
   zonaEnvio: string;
@@ -97,7 +100,7 @@ export async function obtenerPedidoAdmin(codigo: string): Promise<DetallePedidoA
   const { data: p } = await supabase
     .from("pedidos")
     .select(
-      "id, codigo, estado, tipo_cliente, subtotal, envio, total, zona_envio, usuario_id, contacto_nombre, contacto_correo, contacto_telefono, departamento, ciudad, colonia, direccion, referencia, comprobante_path, metodo_pago_entrega, motivo_cancelacion, creado_en, pago_revision_en, confirmado_en, enviado_en, entregado_en, cancelado_en, pedido_items(id, producto_slug, producto_nombre, aroma_id, aroma_nombre, tamano, img, precio_unitario, cantidad, total, variantes(sku)), pedido_mensajes(id, texto, de_admin, creado_en)",
+      "id, codigo, estado, tipo_cliente, subtotal, descuento, codigo_descuento, descuento_porcentaje, envio, total, zona_envio, usuario_id, contacto_nombre, contacto_correo, contacto_telefono, departamento, ciudad, colonia, direccion, referencia, comprobante_path, metodo_pago_entrega, motivo_cancelacion, creado_en, pago_revision_en, confirmado_en, enviado_en, entregado_en, cancelado_en, pedido_items(id, producto_slug, producto_nombre, aroma_id, aroma_nombre, tamano, img, precio_unitario, cantidad, total, variantes(sku)), pedido_mensajes(id, texto, de_admin, creado_en)",
     )
     .eq("codigo", codigo)
     .maybeSingle();
@@ -115,6 +118,9 @@ export async function obtenerPedidoAdmin(codigo: string): Promise<DetallePedidoA
     estado: p.estado,
     tipoCliente: p.tipo_cliente,
     subtotal: n(p.subtotal),
+    descuento: n(p.descuento),
+    codigoDescuento: p.codigo_descuento,
+    descuentoPorcentaje: p.descuento_porcentaje == null ? null : n(p.descuento_porcentaje),
     envio: n(p.envio),
     total: n(p.total),
     zonaEnvio: p.zona_envio,
@@ -326,4 +332,169 @@ export async function datosDashboard() {
     inventario,
     cuentasPorCobrar: (credito ?? []).reduce((s, c) => s + n(c.saldo), 0),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Clientes y cuentas por cobrar
+// ---------------------------------------------------------------------------
+
+export type FilaCliente = {
+  id: string;
+  nombre: string;
+  correo: string;
+  telefono: string | null;
+  rtn: string | null;
+  tipo: TipoCliente;
+  limite: number;
+  saldo: number;
+  ciudad: string | null;
+  pedidos: number;
+  comprado: number;
+  ultimaCompra: string | null;
+  creadoEn: string;
+};
+
+type PedidoCorto = { usuario_id: string; codigo: string; estado: EstadoPedido; tipo_cliente: TipoCliente; total: number | string; creado_en: string; ciudad: string; departamento: string };
+
+async function pedidosDeClientes(ids?: string[]) {
+  const { supabase } = await exigirAdmin();
+  let q = supabase.from("pedidos").select("usuario_id, codigo, estado, tipo_cliente, total, creado_en, ciudad, departamento").order("creado_en", { ascending: false }).limit(5000);
+  if (ids) q = q.in("usuario_id", ids);
+  const { data, error } = await q;
+  if (error) throw new Error(error.message);
+  return (data ?? []) as PedidoCorto[];
+}
+
+export async function listarClientes(): Promise<FilaCliente[]> {
+  const { supabase } = await exigirAdmin();
+  const [{ data: perfiles, error }, pedidos] = await Promise.all([
+    supabase.from("perfiles").select("id, nombre, correo, telefono, rtn, tipo_cliente, limite_credito, saldo, creado_en").eq("rol", "cliente").order("creado_en", { ascending: false }),
+    pedidosDeClientes(),
+  ]);
+  if (error) throw new Error(error.message);
+  return (perfiles ?? []).map((c) => {
+    const suyos = pedidos.filter((p) => p.usuario_id === c.id);
+    const validos = suyos.filter((p) => p.estado !== "cancelado");
+    return {
+      id: c.id,
+      nombre: c.nombre || c.correo,
+      correo: c.correo,
+      telefono: c.telefono,
+      rtn: c.rtn,
+      tipo: c.tipo_cliente,
+      limite: n(c.limite_credito),
+      saldo: n(c.saldo),
+      ciudad: suyos[0] ? `${suyos[0].ciudad}` : null,
+      pedidos: validos.length,
+      comprado: validos.reduce((s, p) => s + n(p.total), 0),
+      ultimaCompra: suyos[0]?.creado_en ?? null,
+      creadoEn: c.creado_en,
+    };
+  });
+}
+
+export type Abono = { id: string; monto: number; metodo: string; referencia: string | null; creadoEn: string };
+
+export async function obtenerCliente(id: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const { supabase } = await exigirAdmin();
+  const [{ data: c }, pedidos, { data: abonos }, { data: dirs }] = await Promise.all([
+    supabase.from("perfiles").select("id, nombre, correo, telefono, rtn, rol, tipo_cliente, limite_credito, saldo, creado_en").eq("id", id).maybeSingle(),
+    pedidosDeClientes([id]),
+    supabase.from("abonos").select("id, monto, metodo, referencia, creado_en").eq("cliente_id", id).order("creado_en", { ascending: false }),
+    supabase.from("direcciones").select("direccion, colonia, ciudad, departamento").eq("usuario_id", id).order("predeterminada", { ascending: false }).limit(1),
+  ]);
+  if (!c) return null;
+  const dir = dirs?.[0];
+  return {
+    ahora: Date.now(),
+    id: c.id,
+    nombre: c.nombre || c.correo,
+    correo: c.correo,
+    telefono: c.telefono as string | null,
+    rtn: c.rtn as string | null,
+    esAdmin: c.rol === "admin",
+    tipo: c.tipo_cliente as TipoCliente,
+    limite: n(c.limite_credito),
+    saldo: n(c.saldo),
+    creadoEn: c.creado_en as string,
+    direccion: dir ? `${dir.direccion}, ${dir.colonia}` : null,
+    ciudad: dir ? `${dir.ciudad}, ${dir.departamento}` : pedidos[0] ? `${pedidos[0].ciudad}, ${pedidos[0].departamento}` : null,
+    pedidos: pedidos.map((p) => ({ codigo: p.codigo, estado: p.estado, tipoCliente: p.tipo_cliente, total: n(p.total), creadoEn: p.creado_en })),
+    abonos: (abonos ?? []).map((a) => ({ id: a.id, monto: n(a.monto), metodo: a.metodo, referencia: a.referencia, creadoEn: a.creado_en })) as Abono[],
+  };
+}
+
+export async function datosCuentasPorCobrar() {
+  const { supabase } = await exigirAdmin();
+  const { data: perfiles, error } = await supabase
+    .from("perfiles")
+    .select("id, nombre, correo, limite_credito, saldo")
+    .gt("saldo", 0)
+    .order("saldo", { ascending: false });
+  if (error) throw new Error(error.message);
+  const ids = (perfiles ?? []).map((p) => p.id);
+  if (!ids.length) return { ahora: Date.now(), clientes: [] };
+  const [pedidos, { data: abonos }] = await Promise.all([
+    pedidosDeClientes(ids),
+    supabase.from("abonos").select("cliente_id, creado_en").in("cliente_id", ids).order("creado_en", { ascending: false }),
+  ]);
+  return {
+    ahora: Date.now(),
+    clientes: (perfiles ?? []).map((c) => ({
+      id: c.id,
+      nombre: c.nombre || c.correo,
+      limite: n(c.limite_credito),
+      saldo: n(c.saldo),
+      documentos: pedidos
+        .filter((p) => p.usuario_id === c.id && p.tipo_cliente === "credito" && p.estado !== "cancelado")
+        .map((p) => ({ codigo: p.codigo, fecha: p.creado_en, total: n(p.total) })),
+      ultimoAbono: abonos?.find((a) => a.cliente_id === c.id)?.creado_en ?? null,
+    })),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Códigos de descuento
+// ---------------------------------------------------------------------------
+
+export type CodigoDescuento = {
+  id: string;
+  codigo: string;
+  porcentaje: number;
+  descripcion: string | null;
+  clienteId: string | null;
+  clienteNombre: string | null;
+  minimoCompra: number | null;
+  validoHasta: string | null;
+  usosMaximos: number | null;
+  usos: number;
+  activo: boolean;
+  creadoEn: string;
+};
+
+export async function listarDescuentos(): Promise<CodigoDescuento[]> {
+  const { supabase } = await exigirAdmin();
+  const { data, error } = await supabase
+    .from("codigos_descuento")
+    .select("id, codigo, porcentaje, descripcion, cliente_id, minimo_compra, valido_hasta, usos_maximos, usos, activo, creado_en, perfiles(nombre, correo)")
+    .order("creado_en", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((d) => {
+    const cli = d.perfiles as unknown as { nombre: string; correo: string } | null;
+    return {
+      id: d.id,
+      codigo: d.codigo,
+      porcentaje: n(d.porcentaje),
+      descripcion: d.descripcion,
+      clienteId: d.cliente_id,
+      clienteNombre: cli ? cli.nombre || cli.correo : null,
+      minimoCompra: d.minimo_compra == null ? null : n(d.minimo_compra),
+      validoHasta: d.valido_hasta,
+      usosMaximos: d.usos_maximos,
+      usos: d.usos,
+      activo: d.activo,
+      creadoEn: d.creado_en,
+    };
+  });
 }

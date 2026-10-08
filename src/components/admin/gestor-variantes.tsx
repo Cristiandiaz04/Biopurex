@@ -1,14 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
-import { Pencil, Plus, SlidersHorizontal, Upload, X } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Pencil, Plus, SlidersHorizontal, Upload } from "lucide-react";
 import { ajustarStock, guardarVariante, type DatosVariante } from "@/acciones/admin";
 import { MensajeError } from "@/components/ui/campo";
 import { AROMAS, AROMA_IDS, aromaVar, esAroma } from "@/lib/catalogo";
 import type { Movimiento, VarianteAdmin } from "@/lib/datos/admin";
 import { lempiras } from "@/lib/formato";
 import { createClient } from "@/lib/supabase/client";
+import { Modal } from "./modal";
 import { boton, Chip, fechaCorta, PuntoAroma, td, th } from "./ui";
 
 const TIPO: Record<Movimiento["tipo"], [string, string]> = {
@@ -20,28 +21,6 @@ const TIPO: Record<Movimiento["tipo"], [string, string]> = {
   ajuste: ["Ajuste", "bg-error-50 text-error"],
 };
 const entrada = "h-11 w-full rounded-sm border-[1.5px] border-line bg-white px-3 text-sm text-navy outline-none focus:border-navy";
-
-function Modal({ titulo, children, cerrar }: { titulo: string; children: React.ReactNode; cerrar: () => void }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && cerrar();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [cerrar]);
-  return (
-    <div role="dialog" aria-modal="true" aria-label={titulo} className="fixed inset-0 z-[80] flex items-center justify-center p-4">
-      <div onClick={cerrar} className="absolute inset-0 bg-[var(--scrim)]" />
-      <div className="relative flex max-h-full w-full max-w-[520px] flex-col gap-4 overflow-y-auto rounded-lg bg-white p-6 shadow-2">
-        <div className="flex items-start justify-between gap-3">
-          <h2 className="m-0 text-xl font-bold">{titulo}</h2>
-          <button type="button" onClick={cerrar} aria-label="Cerrar" className="flex size-10 flex-none items-center justify-center rounded-full hover:bg-surface">
-            <X size={20} aria-hidden />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
 
 export function GestorVariantes({
   productoId,

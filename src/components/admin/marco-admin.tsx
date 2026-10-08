@@ -4,13 +4,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
-import { Box, LayoutDashboard, LogOut, Menu, PanelLeft, ShoppingBag, Store, X } from "lucide-react";
+import { Box, LayoutDashboard, LogOut, Menu, PanelLeft, ShoppingBag, Store, Tag, Users, Wallet, X } from "lucide-react";
 import { cerrarSesion } from "@/acciones/acceso";
 
 const NAV = [
   { href: "/admin", label: "Dashboard", icono: LayoutDashboard },
   { href: "/admin/pedidos", label: "Pedidos", icono: ShoppingBag, insignia: true },
+  { href: "/admin/clientes", label: "Clientes", icono: Users },
   { href: "/admin/productos", label: "Productos e inventario", icono: Box },
+  { href: "/admin/descuentos", label: "Descuentos", icono: Tag },
+  { href: "/admin/cuentas", label: "Cuentas por cobrar", icono: Wallet },
 ];
 
 // Preferencia "menú plegado" (por navegador).

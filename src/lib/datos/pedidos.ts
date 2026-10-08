@@ -30,6 +30,9 @@ export type MensajePedido = { id: string; texto: string; deAdmin: boolean; cread
 export type DetallePedido = ResumenPedido & {
   tipoCliente: string;
   subtotal: number;
+  descuento: number;
+  codigoDescuento: string | null;
+  descuentoPorcentaje: number | null;
   envio: number;
   zonaEnvio: "sps" | "resto";
   contacto: { nombre: string; correo: string; telefono: string };
@@ -69,7 +72,7 @@ export async function obtenerPedido(codigo: string): Promise<DetallePedido | nul
   const { data: p } = await supabase
     .from("pedidos")
     .select(
-      "id, codigo, estado, tipo_cliente, subtotal, envio, total, zona_envio, contacto_nombre, contacto_correo, contacto_telefono, departamento, ciudad, colonia, direccion, referencia, comprobante_path, motivo_cancelacion, creado_en, pago_revision_en, confirmado_en, enviado_en, entregado_en, cancelado_en, pedido_items(id, producto_slug, producto_nombre, aroma_id, aroma_nombre, tamano, img, precio_unitario, cantidad, total), pedido_mensajes(id, texto, de_admin, creado_en)",
+      "id, codigo, estado, tipo_cliente, subtotal, descuento, codigo_descuento, descuento_porcentaje, envio, total, zona_envio, contacto_nombre, contacto_correo, contacto_telefono, departamento, ciudad, colonia, direccion, referencia, comprobante_path, motivo_cancelacion, creado_en, pago_revision_en, confirmado_en, enviado_en, entregado_en, cancelado_en, pedido_items(id, producto_slug, producto_nombre, aroma_id, aroma_nombre, tamano, img, precio_unitario, cantidad, total), pedido_mensajes(id, texto, de_admin, creado_en)",
     )
     .eq("codigo", codigo)
     .maybeSingle();
@@ -95,6 +98,9 @@ export async function obtenerPedido(codigo: string): Promise<DetallePedido | nul
     tipoCliente: p.tipo_cliente,
     total: n(p.total),
     subtotal: n(p.subtotal),
+    descuento: n(p.descuento),
+    codigoDescuento: p.codigo_descuento,
+    descuentoPorcentaje: p.descuento_porcentaje == null ? null : n(p.descuento_porcentaje),
     envio: n(p.envio),
     zonaEnvio: p.zona_envio,
     creadoEn: p.creado_en,

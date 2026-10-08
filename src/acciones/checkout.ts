@@ -12,8 +12,11 @@ export async function crearPedido(entrada: {
   items: { varianteId: string; cantidad: number }[];
   datos: DatosEnvio;
   guardarDireccion: boolean;
+  codigo?: string | null;
 }): Promise<ResultadoPedido> {
   const { items, datos, guardarDireccion } = entrada;
+  const codigo = entrada.codigo?.trim().toUpperCase() || null;
+  if (codigo && !/^[A-Z0-9_-]{3,30}$/.test(codigo)) return { error: "El código de descuento no es válido." };
 
   const errores = validarEnvio(datos);
   if (hayErrores(errores)) return { error: "Revisa los campos marcados.", errores };
@@ -38,6 +41,8 @@ export async function crearPedido(entrada: {
       referencia: datos.referencia.trim(),
     },
     p_guardar_direccion: guardarDireccion,
+    // Solo se envía si hay código: así la compra funciona aunque falte la migración 0004.
+    ...(codigo ? { p_codigo: codigo } : {}),
   });
 
   if (error) {
@@ -49,4 +54,18 @@ export async function crearPedido(entrada: {
 
   updateTag("catalogo"); // la disponibilidad cambió
   return { codigo: data as string };
+}
+
+export type ResultadoCodigo = { codigo: string; porcentaje: number } | { error: string };
+
+/** Vista previa del descuento en el checkout. El descuento real lo aplica crear_pedido. */
+export async function validarCodigo(codigo: string, subtotal: number): Promise<ResultadoCodigo> {
+  const c = codigo.trim().toUpperCase();
+  if (!/^[A-Z0-9_-]{3,30}$/.test(c)) return { error: "Escribe un código válido" };
+  if (!Number.isFinite(subtotal) || subtotal < 0) return { error: "Carrito no válido" };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("validar_descuento", { p_codigo: c, p_subtotal: subtotal });
+  if (error) return { error: error.code === "P0001" ? error.message : "No pudimos validar el código" };
+  const fila = (data as { codigo: string; porcentaje: number | string }[])[0];
+  return { codigo: fila.codigo, porcentaje: Number(fila.porcentaje) };
 }

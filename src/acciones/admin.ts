@@ -243,3 +243,94 @@ export async function ajustarStock(varianteId: string, cantidad: number, nota: s
   revalidatePath("/admin/productos");
   return { ok: "Stock actualizado" };
 }
+
+// ---------------------------------------------------------------------------
+// Clientes, abonos y descuentos
+// ---------------------------------------------------------------------------
+
+export async function actualizarCliente(id: string, tipo: string, limite: string): Promise<Resultado> {
+  if (!UUID.test(id)) return { error: "Cliente no válido" };
+  if (!["normal", "contra_entrega", "credito"].includes(tipo)) return { error: "Etiqueta no válida" };
+  const lim = dinero(limite || "0");
+  if (lim === "error" || lim === null) return { error: "Límite de crédito no válido", errores: { limite: "Monto no válido" } };
+  const { supabase } = await exigirAdmin();
+  const { error } = await supabase.from("perfiles").update({ tipo_cliente: tipo, limite_credito: lim }).eq("id", id);
+  if (error) return fallo("actualizarCliente", error);
+  revalidatePath(`/admin/clientes/${id}`);
+  revalidatePath("/admin/clientes");
+  return { ok: "Cliente actualizado" };
+}
+
+export async function registrarAbono(clienteId: string, monto: string, metodo: string, referencia: string): Promise<Resultado> {
+  if (!UUID.test(clienteId)) return { error: "Cliente no válido" };
+  const m = dinero(monto);
+  if (m === "error" || m === null || m <= 0) return { error: "Escribe un monto mayor que cero" };
+  if (!["Transferencia", "Depósito", "Cheque", "Efectivo"].includes(metodo)) return { error: "Método no válido" };
+  const { supabase } = await exigirAdmin();
+  const { error } = await supabase.rpc("admin_registrar_abono", {
+    p_cliente: clienteId,
+    p_monto: m,
+    p_metodo: metodo,
+    p_referencia: referencia.trim().slice(0, 80),
+  });
+  if (error) return fallo("registrarAbono", error);
+  revalidatePath(`/admin/clientes/${clienteId}`);
+  revalidatePath("/admin/cuentas");
+  return { ok: "Abono registrado" };
+}
+
+export type DatosDescuento = {
+  id?: string;
+  codigo: string;
+  porcentaje: string;
+  descripcion: string;
+  clienteId: string;
+  minimoCompra: string;
+  validoHasta: string;
+  usosMaximos: string;
+  activo: boolean;
+};
+
+export async function guardarDescuento(d: DatosDescuento): Promise<Resultado> {
+  const errores: Record<string, string> = {};
+  const codigo = d.codigo.trim().toUpperCase();
+  if (!/^[A-Z0-9_-]{3,30}$/.test(codigo)) errores.codigo = "3 a 30 letras, números, - o _";
+  const pct = Number(d.porcentaje.replace(",", "."));
+  if (!Number.isFinite(pct) || pct <= 0 || pct > 90) errores.porcentaje = "Entre 0.01 y 90";
+  const minimo = dinero(d.minimoCompra);
+  if (minimo === "error") errores.minimoCompra = "Monto no válido";
+  const usos = d.usosMaximos.trim() ? Number(d.usosMaximos) : null;
+  if (usos !== null && (!Number.isInteger(usos) || usos < 1)) errores.usosMaximos = "Número entero mayor que 0";
+  if (d.validoHasta && !/^\d{4}-\d{2}-\d{2}$/.test(d.validoHasta)) errores.validoHasta = "Fecha no válida";
+  if (d.clienteId && !UUID.test(d.clienteId)) errores.clienteId = "Cliente no válido";
+  if (d.descripcion.length > 160) errores.descripcion = "Máximo 160 caracteres";
+  if (d.id && !UUID.test(d.id)) return { error: "Código no válido" };
+  if (Object.keys(errores).length) return { error: "Revisa los campos marcados.", errores };
+
+  const { supabase } = await exigirAdmin();
+  const fila = {
+    codigo,
+    porcentaje: Math.round(pct * 100) / 100,
+    descripcion: d.descripcion.trim() || null,
+    cliente_id: d.clienteId || null,
+    minimo_compra: minimo as number | null,
+    valido_hasta: d.validoHasta || null,
+    usos_maximos: usos,
+    activo: d.activo,
+  };
+  const { error } = d.id
+    ? await supabase.from("codigos_descuento").update(fila).eq("id", d.id)
+    : await supabase.from("codigos_descuento").insert(fila);
+  if (error) return fallo("guardarDescuento", error.code === "23505" ? { code: "P0001", message: "Ya existe un código con ese nombre" } : error);
+  revalidatePath("/admin/descuentos");
+  return { ok: d.id ? "Código guardado" : "Código creado" };
+}
+
+export async function alternarDescuento(id: string, activo: boolean): Promise<Resultado> {
+  if (!UUID.test(id)) return { error: "Código no válido" };
+  const { supabase } = await exigirAdmin();
+  const { error } = await supabase.from("codigos_descuento").update({ activo }).eq("id", id);
+  if (error) return fallo("alternarDescuento", error);
+  revalidatePath("/admin/descuentos");
+  return { ok: activo ? "Código activado" : "Código desactivado" };
+}

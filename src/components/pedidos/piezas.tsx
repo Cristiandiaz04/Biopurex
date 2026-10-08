@@ -133,6 +133,14 @@ export function ProductosPedido({ pedido }: { pedido: DetallePedido }) {
           <span className="text-text-2">Subtotal</span>
           <span>{lempiras(pedido.subtotal)}</span>
         </div>
+        {pedido.descuento > 0 && (
+          <div className="flex justify-between text-success">
+            <span>
+              Descuento {pedido.codigoDescuento} ({pedido.descuentoPorcentaje} %)
+            </span>
+            <span>−{lempiras(pedido.descuento)}</span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span className="text-text-2">Envío · {pedido.zonaEnvio === "sps" ? "San Pedro Sula" : "Resto del país"}</span>
           <span>{lempiras(pedido.envio)}</span>

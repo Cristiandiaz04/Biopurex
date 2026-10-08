@@ -52,7 +52,7 @@ async function Dashboard() {
     { label: "Últimos 7 días", valor: lempiras(suma(7)), sub: `${lempiras(suma(14) - suma(7))} la semana anterior`, icono: TrendingUp, href: "/admin/pedidos" },
     { label: "Mes en curso", valor: lempiras(delMes), sub: "Pedidos confirmados", icono: CalendarDays, href: "/admin/pedidos" },
     { label: "Pedidos por confirmar", valor: String(pendientes.length), sub: `${enRevision} con comprobante por revisar`, icono: Clock, href: "/admin/pedidos?estado=por_confirmar", alerta: enRevision > 0 },
-    { label: "Cuentas por cobrar", valor: lempiras(cuentasPorCobrar), sub: "Saldo de clientes a crédito", icono: Wallet, href: "/admin/pedidos" },
+    { label: "Cuentas por cobrar", valor: lempiras(cuentasPorCobrar), sub: "Saldo de clientes a crédito", icono: Wallet, href: "/admin/cuentas" },
   ];
 
   return (

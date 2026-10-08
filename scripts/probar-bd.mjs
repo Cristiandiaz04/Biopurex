@@ -110,6 +110,30 @@ ok((await q("select stock from public.variantes where id=$1", [vn]))[0].stock ==
 try { await como(AD, () => q("select public.admin_ajustar_stock($1, -30, 'merma')", [vn])); ok(false, "stock negativo"); } catch (e) { ok(/negativo/.test(e.message), "el ajuste no deja stock negativo"); }
 try { await como(U1, () => q("insert into public.productos (slug, linea, nombre, nombre_base, tamano, categoria_id) values ('x','x','x','x','x','hogar')")); ok(false, "cliente creó producto"); } catch { ok(true, "un cliente no puede crear productos"); }
 
+// ---- 0004: abonos y descuentos ----
+await como(AD, () => q("insert into public.codigos_descuento (codigo, porcentaje, minimo_compra) values ('MAYOREO10', 10, 200)"));
+await como(AD, () => q("insert into public.codigos_descuento (codigo, porcentaje, cliente_id) values ('SOLOCLINICA', 15, $1)", [U2]));
+const vd = await como(U1, () => q("select * from public.validar_descuento('mayoreo10', 300)"));
+ok(Number(vd[0].porcentaje) === 10, "validar código (minúsculas) → 10 %");
+try { await como(U1, () => q("select * from public.validar_descuento('MAYOREO10', 100)")); ok(false, "mínimo"); } catch (e) { ok(/desde L. 200/.test(e.message), "respeta la compra mínima: " + e.message); }
+try { await como(U1, () => q("select * from public.validar_descuento('SOLOCLINICA', 300)")); ok(false, "código ajeno"); } catch (e) { ok(/no es válido para tu cuenta/.test(e.message), "código de otro cliente rechazado"); }
+try { await como(U1, () => q("select * from public.codigos_descuento")); const r = await como(U1, () => q("select count(*)::int n from public.codigos_descuento")); ok(r[0].n === 0, "un cliente no puede listar los códigos"); } catch { ok(true, "un cliente no puede listar los códigos"); }
+const cod3 = await como(U1, async () => (await q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb,false,'MAYOREO10') c", [items([[vLav, 3]]), contacto, dirSPS]))[0].c);
+const p3 = (await q("select * from public.pedidos where codigo=$1", [cod3]))[0];
+ok(Number(p3.subtotal) === 285 && Number(p3.descuento) === 28.5 && Number(p3.total) === 316.5, `pedido con descuento: 285 − 28.50 + 60 = ${p3.total}`);
+ok((await q("select usos from public.codigos_descuento where codigo='MAYOREO10'"))[0].usos === 1, "el código suma un uso");
+await como(AD, () => q("select public.admin_cancelar_pedido($1,'Prueba')", [p3.id]));
+ok((await q("select usos from public.codigos_descuento where codigo='MAYOREO10'"))[0].usos === 0, "cancelar devuelve el uso del código");
+// Abonos
+await como(U2, async () => (await q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb,false,'SOLOCLINICA') c", [items([[vLav, 2]]), JSON.stringify({ nombre: "Clínica Santa Rosa", correo: "clinica@correo.com", telefono: "25501234" }), dirSPS]))[0].c);
+const s0 = Number((await q("select saldo from public.perfiles where id=$1", [U2]))[0].saldo);
+ok(s0 === 221.5, `crédito con descuento suma 190 − 28.50 + 60 = ${s0}`);
+try { await como(AD, () => q("select public.admin_registrar_abono($1, 500, 'Efectivo', null)", [U2])); ok(false, "abono mayor"); } catch (e) { ok(/supera el saldo/.test(e.message), "no se puede abonar más que el saldo"); }
+await como(AD, () => q("select public.admin_registrar_abono($1, 100, 'Transferencia', 'BAC 123')", [U2]));
+ok(Number((await q("select saldo from public.perfiles where id=$1", [U2]))[0].saldo) === 121.5, "abono baja el saldo");
+try { await como(U2, () => q("select public.admin_registrar_abono($1, 10, 'Efectivo', null)", [U2])); ok(false, "cliente abonó"); } catch { ok(true, "un cliente no puede registrarse abonos"); }
+ok((await como(U2, () => q("select count(*)::int n from public.abonos")))[0].n === 1, "el cliente ve sus abonos");
+
 console.log(fallas ? `\n${fallas} FALLAS` : "\nTodo OK");
 await db.close();
 if (fallas) process.exit(1);
