@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { LayoutDashboard } from "lucide-react";
 
 const CLAVE = "bpx-rol";
@@ -12,7 +12,16 @@ const VIGENCIA = 10 * 60_000; // con la misma sesión, se vuelve a preguntar cad
  * Botón "Panel" del encabezado de la tienda: solo para cuentas admin.
  * El encabezado es estático (cacheado), así que el rol se pregunta a /api/rol desde el navegador.
  */
-export function BotonPanel({ movil }: { movil?: boolean }) {
+/** usePathname necesita Suspense en páginas prerenderizadas; sin sesión no se muestra nada. */
+export function BotonPanel(props: { movil?: boolean }) {
+  return (
+    <Suspense fallback={null}>
+      <Boton {...props} />
+    </Suspense>
+  );
+}
+
+function Boton({ movil }: { movil?: boolean }) {
   const [admin, setAdmin] = useState(false);
   const pathname = usePathname();
 
