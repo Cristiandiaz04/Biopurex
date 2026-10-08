@@ -168,7 +168,11 @@ export function MarcoAdmin({ nombre, pendientes, children }: { nombre: string; p
             <Menu size={20} aria-hidden />
           </button>
           <div className="min-w-0 flex-1 truncate text-[15px] font-bold">{titulo}</div>
-          <span className="whitespace-nowrap text-[13px] text-text-2 max-[899px]:hidden">
+          <Link href="/" className="flex h-10 items-center gap-2 whitespace-nowrap rounded-full px-3.5 text-sm font-semibold text-navy no-underline shadow-[inset_0_0_0_1.5px_var(--border)] hover:bg-navy-50">
+            <Store size={16} aria-hidden />
+            <span className="max-[599px]:hidden">Ver tienda</span>
+          </Link>
+          <span className="whitespace-nowrap text-[13px] text-text-2 max-[1179px]:hidden">
             {new Date().toLocaleDateString("es-HN", { weekday: "long", day: "numeric", month: "short", year: "numeric", timeZone: "America/Tegucigalpa" })}
           </span>
         </header>

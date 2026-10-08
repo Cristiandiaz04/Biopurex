@@ -39,14 +39,18 @@ export async function iniciarSesion(_: EstadoAcceso, fd: FormData): Promise<Esta
   if (hayErrores(errores)) return { errores, valores: { correo: d.correo } };
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email: d.correo, password: d.contrasena });
+  const { data, error } = await supabase.auth.signInWithPassword({ email: d.correo, password: d.contrasena });
   if (error) {
     const msg = /confirm/i.test(error.message)
       ? "Confirma tu correo antes de entrar. Revisa tu bandeja de entrada."
       : "Correo o contraseña incorrectos";
     return { mensaje: msg, valores: { correo: d.correo } };
   }
-  redirect(destinoSeguro(fd.get("siguiente")));
+  // Dos perspectivas: el admin entra a su Dashboard; el cliente vuelve a la tienda.
+  const { data: perfil } = await supabase.from("perfiles").select("rol").eq("id", data.user.id).single();
+  const destino = destinoSeguro(fd.get("siguiente"));
+  if (perfil?.rol === "admin") redirect(destino.startsWith("/admin") ? destino : "/admin");
+  redirect(destino);
 }
 
 export async function registrarse(_: EstadoAcceso, fd: FormData): Promise<EstadoAcceso> {

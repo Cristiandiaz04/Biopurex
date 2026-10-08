@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { Package, Search, ShoppingBag, User } from "lucide-react";
 import { categoria, type CategoriaId } from "@/lib/catalogo";
+import { BotonPanel } from "./boton-panel";
 import { useCarrito } from "./carrito-provider";
 
 const NAV: CategoriaId[] = ["hogar", "lavanderia", "cocina", "auto", "articulos"];
@@ -106,6 +107,7 @@ export function Encabezado() {
             <Image src="/img/logo.png" alt="BIOPUREX" width={76} height={38} priority className="h-[38px] w-auto" />
           </Link>
           <div className="flex-1" />
+          <BotonPanel movil />
           <Link href="/cuenta" aria-label="Mi cuenta" className="flex size-11 items-center justify-center rounded-full text-navy hover:bg-surface">
             <User size={20} strokeWidth={2} aria-hidden />
           </Link>
@@ -128,6 +130,7 @@ export function Encabezado() {
           <Buscador />
         </Suspense>
         <div className="flex flex-none items-center gap-1">
+          <BotonPanel />
           <Link
             href="/pedidos"
             aria-label="Mis pedidos"
