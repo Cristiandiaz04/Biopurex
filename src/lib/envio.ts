@@ -1,36 +1,26 @@
 /*
- * Zonas de entrega (municipios y ciudades que define el admin) y costo de envío.
- * Mismas reglas que _crear_pedido en la base de datos (0007), que es la que decide al final.
+ * Zonas de entrega (municipios que define el admin) y costo de envío.
+ * Mismas reglas que _crear_pedido en la base de datos (0010), que es la que decide al final.
+ * El cliente elige el municipio de la lista y escribe su ciudad, aldea o caserío.
  */
 
-export type Ciudad = { id: string; nombre: string; activo: boolean };
-export type Municipio = { id: string; departamento: string; nombre: string; costo: number; activo: boolean; ciudades: Ciudad[] };
+export type Municipio = { id: string; departamento: string; nombre: string; costo: number; activo: boolean };
 export type ZonasEnvio = { municipios: Municipio[]; gratisDesde: number | null };
 
 const igual = (a: string, b: string) => a.trim().toLocaleLowerCase("es") === b.trim().toLocaleLowerCase("es");
 
-/** Solo lo que el cliente puede elegir: municipios activos con al menos una ciudad activa. */
-export function zonasActivas(municipios: Municipio[]): Municipio[] {
-  return municipios
-    .filter((m) => m.activo)
-    .map((m) => ({ ...m, ciudades: m.ciudades.filter((c) => c.activo) }))
-    .filter((m) => m.ciudades.length > 0);
-}
+/** Solo lo que el cliente puede elegir: municipios activos. */
+export const zonasActivas = (municipios: Municipio[]) => municipios.filter((m) => m.activo);
 
 export const departamentosConEntrega = (municipios: Municipio[]) => [...new Set(zonasActivas(municipios).map((m) => m.departamento))].sort((a, b) => a.localeCompare(b, "es"));
 
 /**
- * Busca la zona de una dirección. Sin municipio (direcciones guardadas antes de las zonas) se deduce
- * por la ciudad. Devuelve los nombres tal como están en la lista, o null si no se entrega ahí.
+ * Municipio de una dirección (con el nombre tal como está en la lista), o null si no se entrega ahí.
+ * Sin municipio (direcciones guardadas antes) se prueba con la ciudad.
  */
-export function resolverZona(municipios: Municipio[], departamento: string, municipio: string, ciudad: string) {
-  for (const m of zonasActivas(municipios)) {
-    if (m.departamento !== departamento) continue;
-    if (municipio.trim() && !igual(m.nombre, municipio)) continue;
-    const c = m.ciudades.find((x) => igual(x.nombre, ciudad));
-    if (c) return { municipio: m, ciudad: c.nombre };
-  }
-  return null;
+export function resolverZona(municipios: Municipio[], departamento: string, municipio: string, ciudad: string): Municipio | null {
+  const buscado = municipio.trim() || ciudad;
+  return zonasActivas(municipios).find((m) => m.departamento === departamento && igual(m.nombre, buscado)) ?? null;
 }
 
 /** Envío gratis cuando la compra es MAYOR que el mínimo configurado. */

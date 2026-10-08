@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { MapPin, Pencil, Plus, Trash2, Truck } from "lucide-react";
-import { eliminarCiudad, eliminarMunicipio, guardarCiudad, guardarEnvioGratis, guardarMunicipio, type DatosMunicipio } from "@/acciones/envios";
+import { eliminarMunicipio, guardarEnvioGratis, guardarMunicipio, type DatosMunicipio } from "@/acciones/envios";
 import { MensajeError } from "@/components/ui/campo";
 import type { Municipio } from "@/lib/envio";
 import { lempiras } from "@/lib/formato";
@@ -79,7 +79,7 @@ export function BotonMunicipio({ municipio }: { municipio?: Municipio }) {
         {municipio ? "Editar" : "Nuevo municipio"}
       </button>
       {form && (
-        <Modal titulo={form.id ? "Editar municipio" : "Nuevo municipio"} sub="Después agrégale las ciudades donde entregas." cerrar={() => setForm(null)}>
+        <Modal titulo={form.id ? "Editar municipio" : "Nuevo municipio"} sub="El cliente lo elige de la lista y escribe su ciudad, aldea o caserío." cerrar={() => setForm(null)}>
           <div className="grid grid-cols-2 gap-3">
             <label className="col-span-2 flex flex-col gap-1.5 text-[13px] font-semibold">
               Departamento
@@ -134,33 +134,19 @@ export function BotonMunicipio({ municipio }: { municipio?: Municipio }) {
 
 export function TarjetaMunicipio({ municipio: m }: { municipio: Municipio }) {
   const router = useRouter();
-  const [nueva, setNueva] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pendiente, iniciar] = useTransition();
-  const correr = (fn: () => Promise<{ error?: string }>, despues?: () => void) =>
-    iniciar(async () => {
-      setError(null);
-      const r = await fn();
-      if (r.error) return setError(r.error);
-      despues?.();
-      router.refresh();
-    });
-  const activas = m.ciudades.filter((c) => c.activo).length;
 
   return (
     <Tarjeta className={`flex flex-col overflow-hidden ${m.activo ? "" : "opacity-75"}`}>
-      <div className="flex flex-wrap items-start gap-3 border-b border-line px-4 py-3.5">
+      <div className="flex flex-wrap items-start gap-3 px-4 py-3.5">
         <span className="flex size-10 flex-none items-center justify-center rounded-full bg-navy-50">
           <MapPin size={18} aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <strong className="text-[15px]">{m.nombre}</strong>
-            {m.activo ? (
-              activas ? <Chip chico className="bg-success-50 text-success">Activo</Chip> : <Chip chico className="bg-warning-50 text-warning">Sin ciudades</Chip>
-            ) : (
-              <Chip chico className="bg-surface text-text-2">Desactivado</Chip>
-            )}
+            {m.activo ? <Chip chico className="bg-success-50 text-success">Activo</Chip> : <Chip chico className="bg-surface text-text-2">Desactivado</Chip>}
           </div>
           <div className="text-[13px] text-text-2">
             {m.departamento} · envío <strong className="text-navy">{lempiras(m.costo)}</strong>
@@ -174,7 +160,13 @@ export function TarjetaMunicipio({ municipio: m }: { municipio: Municipio }) {
             title="Eliminar municipio"
             disabled={pendiente}
             onClick={() => {
-              if (window.confirm(`¿Eliminar ${m.nombre} y sus ciudades? Los pedidos anteriores no cambian.`)) correr(() => eliminarMunicipio(m.id));
+              if (!window.confirm(`¿Eliminar ${m.nombre}? Los pedidos anteriores no cambian.`)) return;
+              iniciar(async () => {
+                setError(null);
+                const r = await eliminarMunicipio(m.id);
+                if (r.error) return setError(r.error);
+                router.refresh();
+              });
             }}
             className="flex size-11 items-center justify-center rounded-sm text-text-2 hover:bg-error-50 hover:text-error"
           >
@@ -182,38 +174,6 @@ export function TarjetaMunicipio({ municipio: m }: { municipio: Municipio }) {
           </button>
         </div>
       </div>
-      <ul className="m-0 list-none p-0">
-        {m.ciudades.map((c) => (
-          <li key={c.id} className="flex min-h-12 items-center gap-3 border-b border-line px-4 text-sm">
-            <label className="flex flex-1 cursor-pointer items-center gap-2.5">
-              <input type="checkbox" checked={c.activo} disabled={pendiente} onChange={(e) => correr(() => guardarCiudad({ id: c.id, municipioId: m.id, nombre: c.nombre, activo: e.target.checked }))} className="size-5 accent-[var(--navy)]" />
-              <span className={c.activo ? "font-semibold" : "text-text-2 line-through"}>{c.nombre}</span>
-            </label>
-            <button
-              type="button"
-              aria-label={`Quitar ${c.nombre}`}
-              disabled={pendiente}
-              onClick={() => correr(() => eliminarCiudad(c.id))}
-              className="flex size-10 items-center justify-center rounded-sm text-text-2 hover:bg-error-50 hover:text-error"
-            >
-              <Trash2 size={15} aria-hidden />
-            </button>
-          </li>
-        ))}
-      </ul>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (nueva.trim()) correr(() => guardarCiudad({ municipioId: m.id, nombre: nueva, activo: true }), () => setNueva(""));
-        }}
-        className="flex gap-2 px-4 py-3"
-      >
-        <input value={nueva} onChange={(e) => setNueva(e.target.value)} maxLength={80} placeholder="Agregar ciudad (ej.: Chamelecón)" aria-label={`Nueva ciudad en ${m.nombre}`} className={entradaAdmin} />
-        <button type="submit" disabled={pendiente || !nueva.trim()} className={boton.secundario}>
-          <Plus size={16} aria-hidden />
-          Agregar
-        </button>
-      </form>
       {error && <div className="px-4 pb-3"><MensajeError>{error}</MensajeError></div>}
     </Tarjeta>
   );

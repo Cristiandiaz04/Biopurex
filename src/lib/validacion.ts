@@ -56,7 +56,7 @@ export function validarEnvio(d: DatosEnvio): Errores<DatosEnvio> {
   if (soloDigitos(d.telefono).length !== 8) e.telefono = d.telefono.trim() ? "El teléfono debe tener 8 dígitos" : "Este campo es obligatorio";
   if (!(DEPARTAMENTOS as readonly string[]).includes(d.departamento)) e.departamento = "Elige un departamento";
   if (!largo(d.municipio, 2, 80)) e.municipio = "Elige tu municipio";
-  if (!largo(d.ciudad, 2, 80)) e.ciudad = "Elige tu ciudad";
+  if (!largo(d.ciudad, 2, 80)) e.ciudad = "Escribe tu ciudad, aldea o caserío";
   if (!largo(d.colonia, 2, 120)) e.colonia = "Este campo es obligatorio";
   if (!largo(d.direccion, 3, 200)) e.direccion = "Este campo es obligatorio";
   if (d.referencia.trim().length > 200) e.referencia = "Máximo 200 caracteres";

@@ -51,26 +51,6 @@ export async function eliminarMunicipio(id: string): Promise<Resultado> {
   return { ok: "Municipio eliminado" };
 }
 
-export async function guardarCiudad(d: { id?: string; municipioId: string; nombre: string; activo: boolean }): Promise<Resultado> {
-  if (!UUID.test(d.municipioId) || (d.id && !UUID.test(d.id))) return { error: "Datos no válidos" };
-  if (!nombreValido(d.nombre)) return { error: "Escribe el nombre de la ciudad (2 a 80 letras)" };
-  const { supabase } = await exigirAdmin();
-  const fila = { municipio_id: d.municipioId, nombre: d.nombre.trim(), activo: d.activo };
-  const { error } = d.id ? await supabase.from("ciudades").update(fila).eq("id", d.id) : await supabase.from("ciudades").insert(fila);
-  if (error) return errorBd(error, "Esa ciudad ya está en el municipio");
-  updateTag("zonas");
-  return { ok: "Ciudad guardada" };
-}
-
-export async function eliminarCiudad(id: string): Promise<Resultado> {
-  if (!UUID.test(id)) return { error: "Ciudad no válida" };
-  const { supabase } = await exigirAdmin();
-  const { error } = await supabase.from("ciudades").delete().eq("id", id);
-  if (error) return errorBd(error, "");
-  updateTag("zonas");
-  return { ok: "Ciudad eliminada" };
-}
-
 /** Vacío = nunca hay envío gratis. */
 export async function guardarEnvioGratis(desde: string): Promise<Resultado> {
   const m = monto(desde);

@@ -2,26 +2,26 @@ import { describe, expect, it } from "vitest";
 import { costoEnvio, departamentosConEntrega, faltaParaGratis, resolverZona, zonasActivas, type Municipio } from "./envio";
 
 const M: Municipio[] = [
-  { id: "1", departamento: "Cortés", nombre: "San Pedro Sula", costo: 60, activo: true, ciudades: [{ id: "a", nombre: "San Pedro Sula", activo: true }, { id: "b", nombre: "Chamelecón", activo: false }] },
-  { id: "2", departamento: "Cortés", nombre: "Choloma", costo: 80, activo: false, ciudades: [{ id: "c", nombre: "Choloma", activo: true }] },
-  { id: "3", departamento: "Francisco Morazán", nombre: "Distrito Central", costo: 150, activo: true, ciudades: [] },
+  { id: "1", departamento: "Cortés", nombre: "San Pedro Sula", costo: 60, activo: true },
+  { id: "2", departamento: "Cortés", nombre: "Choloma", costo: 80, activo: false },
+  { id: "3", departamento: "Cortés", nombre: "Villanueva", costo: 90, activo: true },
 ];
 
 describe("zonas de entrega", () => {
-  it("solo muestra municipios activos con ciudades activas", () => {
-    const z = zonasActivas(M);
-    expect(z.map((m) => m.nombre)).toEqual(["San Pedro Sula"]);
-    expect(z[0].ciudades.map((c) => c.nombre)).toEqual(["San Pedro Sula"]);
+  it("solo muestra municipios activos", () => {
+    expect(zonasActivas(M).map((m) => m.nombre)).toEqual(["San Pedro Sula", "Villanueva"]);
     expect(departamentosConEntrega(M)).toEqual(["Cortés"]);
   });
-  it("resuelve la zona sin importar mayúsculas y deduce el municipio", () => {
-    expect(resolverZona(M, "Cortés", "san pedro sula", "SAN PEDRO SULA")?.ciudad).toBe("San Pedro Sula");
-    expect(resolverZona(M, "Cortés", "", "San Pedro Sula")?.municipio.nombre).toBe("San Pedro Sula");
+  it("resuelve el municipio sin importar mayúsculas", () => {
+    expect(resolverZona(M, "Cortés", "san pedro sula", "Aldea El Carmen")?.nombre).toBe("San Pedro Sula");
   });
-  it("rechaza zonas fuera de la lista o desactivadas", () => {
-    expect(resolverZona(M, "Francisco Morazán", "", "Tegucigalpa")).toBeNull();
+  it("sin municipio (dirección vieja) prueba con la ciudad", () => {
+    expect(resolverZona(M, "Cortés", "", "Villanueva")?.nombre).toBe("Villanueva");
+    expect(resolverZona(M, "Cortés", "", "Cofradía")).toBeNull();
+  });
+  it("rechaza municipios fuera de la lista o desactivados", () => {
     expect(resolverZona(M, "Cortés", "Choloma", "Choloma")).toBeNull();
-    expect(resolverZona(M, "Cortés", "San Pedro Sula", "Chamelecón")).toBeNull();
+    expect(resolverZona(M, "Francisco Morazán", "Distrito Central", "Tegucigalpa")).toBeNull();
   });
 });
 

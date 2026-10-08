@@ -8,6 +8,7 @@ import { Campo, MensajeError } from "@/components/ui/campo";
 import { SelectorZona, zonaDeDireccion, zonaInicial } from "@/components/ui/selector-zona";
 import type { Direccion } from "@/lib/datos/cuenta";
 import type { Municipio } from "@/lib/envio";
+import { lugar } from "@/lib/formato";
 import { formatoTelefono } from "@/lib/validacion";
 
 type Form = {
@@ -126,7 +127,7 @@ export function Direcciones({ direcciones, nombre, municipios }: { direcciones: 
                 <br />
                 {d.direccion}, {d.colonia}
                 <br />
-                {d.ciudad}, {d.departamento}
+                {lugar(d.ciudad, d.municipio, d.departamento)}
                 <br />
                 Tel. {formatoTelefono(d.telefono)}
               </div>

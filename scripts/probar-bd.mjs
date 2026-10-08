@@ -42,7 +42,7 @@ for (const archivo of readdirSync(dir).filter((x) => x.endsWith(".sql")).sort())
 }
 // Las migraciones idempotentes se pueden volver a correr (p. ej. si Supabase cortó por un bloqueo).
 // (en orden: 0007 redefine _crear_pedido de 0005)
-for (const archivo of ["0005_compras_cotizaciones_facturas.sql", "0006_materia_prima_produccion.sql", "0007_zonas_envio.sql", "0008_categorias_codigos.sql", "0009_stock_libre_problema_pago.sql"]) {
+for (const archivo of ["0005_compras_cotizaciones_facturas.sql", "0006_materia_prima_produccion.sql", "0007_zonas_envio.sql", "0008_categorias_codigos.sql", "0009_stock_libre_problema_pago.sql", "0010_municipio_ciudad_libre.sql"]) {
   await run(readFileSync(dir + "/" + archivo, "utf8"));
   ok(true, archivo + " se puede volver a correr");
 }
@@ -214,7 +214,7 @@ const dirSPS2 = JSON.stringify({ departamento: "Cortés", municipio: "San Pedro 
 await q("update public.configuracion set envio_gratis_desde = 95");
 const codG1 = await como(U1, async () => (await q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb) c", [items([[vLav, 1]]), contacto, dirSPS2]))[0].c);
 let pg = (await q("select * from public.pedidos where codigo=$1", [codG1]))[0];
-ok(Number(pg.envio) === 60 && pg.ciudad === "San Pedro Sula", `compra igual al mínimo paga envío (${pg.envio}) y la ciudad queda con el nombre de la lista`);
+ok(Number(pg.envio) === 60 && pg.municipio === "San Pedro Sula", `compra igual al mínimo paga envío (${pg.envio}) y el municipio queda con el nombre de la lista`);
 await q("update public.configuracion set envio_gratis_desde = 94.99");
 const codG2 = await como(U1, async () => (await q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb) c", [items([[vLav, 1]]), contacto, dirSPS2]))[0].c);
 pg = (await q("select * from public.pedidos where codigo=$1", [codG2]))[0];
@@ -257,6 +257,13 @@ pp = (await q("select estado, problema_pago from public.pedidos where id=$1", [p
 ok(pp.estado === "pago_en_revision" && pp.problema_pago === null, "al subir otro comprobante vuelve a revisión");
 await como(AD, () => q("select public.admin_confirmar_pago($1)", [pSin.id]));
 ok((await stockCit()).stock === -5, "confirmar deja el stock en negativo (unidades por producir)");
+
+// ---- 0010: municipio de la lista + ciudad/aldea libre ----
+const dirAldea = JSON.stringify({ departamento: "Cortés", municipio: "san pedro sula", ciudad: "Aldea El Carmen", colonia: "Centro", direccion: "Casa 3" });
+const codAldea = await como(U1, async () => (await q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb) c", [items([[vLav, 1]]), contacto, dirAldea]))[0].c);
+const pAl = (await q("select municipio, ciudad, envio from public.pedidos where codigo=$1", [codAldea]))[0];
+ok(pAl.municipio === "San Pedro Sula" && pAl.ciudad === "Aldea El Carmen", "la aldea/ciudad es libre y el municipio sale de la lista");
+try { await como(U1, () => q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb)", [items([[vLav, 1]]), contacto, JSON.stringify({ departamento: "Cortés", municipio: "San Pedro Sula", ciudad: "", colonia: "Centro", direccion: "Casa 3" })])); ok(false, "sin ciudad"); } catch (e) { ok(/ciudad, aldea/.test(e.message), "la ciudad/aldea es obligatoria"); }
 
 console.log(fallas ? `\n${fallas} FALLAS` : "\nTodo OK");
 await db.close();

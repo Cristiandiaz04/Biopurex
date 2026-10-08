@@ -157,7 +157,7 @@ export async function obtenerZonas(): Promise<ZonasEnvio> {
 
   const sb = clientePublico();
   const [m, c] = await Promise.all([
-    sb.from("municipios").select("id, departamento, nombre, costo_envio, activo, ciudades(id, nombre, activo)").order("nombre"),
+    sb.from("municipios").select("id, departamento, nombre, costo_envio, activo").order("nombre"),
     sb.from("configuracion").select("envio_gratis_desde").single(),
   ]);
   // Sin la migración 0007 la tienda sigue abierta, pero sin zonas no se puede confirmar un pedido.
@@ -171,7 +171,6 @@ export async function obtenerZonas(): Promise<ZonasEnvio> {
     nombre: x.nombre,
     costo: Number(x.costo_envio),
     activo: x.activo,
-    ciudades: (x.ciudades as { id: string; nombre: string; activo: boolean }[]).sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
   }));
   return {
     municipios: zonasActivas(municipios),

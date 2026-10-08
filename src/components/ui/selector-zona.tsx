@@ -1,13 +1,13 @@
 "use client";
 
-import { Selector } from "@/components/ui/campo";
+import { Campo, Selector } from "@/components/ui/campo";
 import { departamentosConEntrega, resolverZona, type Municipio } from "@/lib/envio";
 
 type Zona = { departamento: string; municipio: string; ciudad: string };
 
 /**
- * Departamento → municipio → ciudad, solo de la lista que define el admin (no se escribe a mano).
- * Si hay una sola opción se elige sola.
+ * Departamento (fijo si solo hay uno: Cortés) → municipio de la lista del admin (obligatorio)
+ * → ciudad, aldea o caserío escrito por el cliente.
  */
 export function SelectorZona({
   municipios,
@@ -22,19 +22,7 @@ export function SelectorZona({
 }) {
   const departamentos = departamentosConEntrega(municipios);
   const delDepto = municipios.filter((m) => m.departamento === valor.departamento);
-  const muni = delDepto.find((m) => m.nombre === valor.municipio);
-  const ciudades = muni?.ciudades ?? [];
-
-  // Al cambiar un nivel, el siguiente se elige solo cuando hay una sola opción.
-  const elegirDepto = (departamento: string) => {
-    const ms = municipios.filter((m) => m.departamento === departamento);
-    const m = ms.length === 1 ? ms[0] : undefined;
-    onChange({ departamento, municipio: m?.nombre ?? "", ciudad: m?.ciudades.length === 1 ? m.ciudades[0].nombre : "" });
-  };
-  const elegirMuni = (municipio: string) => {
-    const m = delDepto.find((x) => x.nombre === municipio);
-    onChange({ ...valor, municipio, ciudad: m?.ciudades.length === 1 ? m.ciudades[0].nombre : "" });
-  };
+  const elegido = delDepto.some((m) => m.nombre === valor.municipio) ? valor.municipio : "";
 
   if (!departamentos.length) {
     return (
@@ -46,7 +34,14 @@ export function SelectorZona({
 
   return (
     <>
-      <Selector label="Departamento" name="departamento" value={departamentos.includes(valor.departamento) ? valor.departamento : ""} onChange={(e) => elegirDepto(e.target.value)} error={errores.departamento}>
+      <Selector
+        label="Departamento"
+        name="departamento"
+        value={departamentos.includes(valor.departamento) ? valor.departamento : ""}
+        onChange={(e) => onChange({ ...valor, departamento: e.target.value, municipio: "" })}
+        disabled={departamentos.length === 1}
+        error={errores.departamento}
+      >
         <option value="" disabled>
           Elige…
         </option>
@@ -54,38 +49,39 @@ export function SelectorZona({
           <option key={d}>{d}</option>
         ))}
       </Selector>
-      <Selector label="Municipio" name="municipio" value={muni ? muni.nombre : ""} onChange={(e) => elegirMuni(e.target.value)} disabled={!delDepto.length} error={errores.municipio}>
+      <Selector label="Municipio" name="municipio" value={elegido} onChange={(e) => onChange({ ...valor, municipio: e.target.value })} disabled={!delDepto.length} required error={errores.municipio}>
         <option value="" disabled>
-          Elige…
+          Elige tu municipio…
         </option>
         {delDepto.map((m) => (
           <option key={m.id}>{m.nombre}</option>
         ))}
       </Selector>
-      <Selector label="Ciudad" name="ciudad" value={ciudades.some((c) => c.nombre === valor.ciudad) ? valor.ciudad : ""} onChange={(e) => onChange({ ...valor, ciudad: e.target.value })} disabled={!ciudades.length} error={errores.ciudad}>
-        <option value="" disabled>
-          Elige…
-        </option>
-        {ciudades.map((c) => (
-          <option key={c.id}>{c.nombre}</option>
-        ))}
-      </Selector>
+      <Campo
+        label="Ciudad, aldea o caserío"
+        name="ciudad"
+        value={valor.ciudad}
+        onChange={(e) => onChange({ ...valor, ciudad: e.target.value })}
+        maxLength={80}
+        placeholder="Ej.: San Pedro Sula, Aldea El Carmen"
+        autoComplete="address-level2"
+        error={errores.ciudad}
+      />
     </>
   );
 }
 
-/** Lleva una dirección guardada a la lista de zonas (nombres exactos); vacía lo que no está en la lista. */
+/** Lleva una dirección guardada a la lista de municipios; si el municipio ya no está, queda por elegir. */
 export function zonaDeDireccion(municipios: Municipio[], d: Zona): Zona & { fuera: boolean } {
-  const z = resolverZona(municipios, d.departamento, d.municipio, d.ciudad);
-  if (z) return { departamento: d.departamento, municipio: z.municipio.nombre, ciudad: z.ciudad, fuera: false };
-  return { ...zonaInicial(municipios), fuera: true };
+  const m = resolverZona(municipios, d.departamento, d.municipio, d.ciudad);
+  if (m) return { departamento: m.departamento, municipio: m.nombre, ciudad: d.ciudad, fuera: false };
+  return { ...zonaInicial(municipios), ciudad: d.ciudad, fuera: true };
 }
 
-/** Zona inicial para un formulario nuevo: si solo hay una opción, ya viene elegida. */
+/** Zona inicial para un formulario nuevo: el departamento ya viene elegido si solo hay uno. */
 export function zonaInicial(municipios: Municipio[]): Zona {
   const deptos = departamentosConEntrega(municipios);
   const departamento = deptos.length === 1 ? deptos[0] : "";
   const ms = municipios.filter((m) => m.departamento === departamento);
-  const m = ms.length === 1 ? ms[0] : undefined;
-  return { departamento, municipio: m?.nombre ?? "", ciudad: m?.ciudades.length === 1 ? m.ciudades[0].nombre : "" };
+  return { departamento, municipio: ms.length === 1 ? ms[0].nombre : "", ciudad: "" };
 }

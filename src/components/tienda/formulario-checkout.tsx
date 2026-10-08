@@ -84,7 +84,7 @@ export function FormularioCheckout({
   const [validando, iniciarValidacion] = useTransition();
 
   const zona = resolverZona(municipios, datos.departamento, datos.municipio, datos.ciudad);
-  const envio = zona && lineas.length ? costoEnvio(zona.municipio.costo, subtotal, gratisDesde) : null;
+  const envio = zona && lineas.length ? costoEnvio(zona.costo, subtotal, gratisDesde) : null;
   const falta = faltaParaGratis(subtotal, gratisDesde);
   const guardada = direcciones.find((x) => x.id === elegida);
   const elegidaFuera = guardada
@@ -219,7 +219,7 @@ export function FormularioCheckout({
               {elegidaFuera && (
                 <div role="alert" className="mb-4 flex items-start gap-2 rounded-md bg-warning-50 px-3.5 py-3 text-sm text-warning">
                   <AlertTriangle size={16} className="mt-0.5 flex-none" aria-hidden />
-                  Esa dirección está fuera de nuestra zona de entrega. Elige municipio y ciudad de la lista.
+                  Esa dirección está fuera de nuestra zona de entrega. Elige tu municipio de la lista.
                 </div>
               )}
               <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2">
@@ -260,7 +260,7 @@ export function FormularioCheckout({
                   <Truck size={20} aria-hidden />
                 </span>
                 <div className="flex-1">
-                  <div className="font-semibold">{zona ? `${zona.municipio.nombre}, ${zona.municipio.departamento}` : "Elige tu municipio y ciudad"}</div>
+                  <div className="font-semibold">{zona ? `${zona.nombre}, ${zona.departamento}` : "Elige tu municipio"}</div>
                   <div className="text-[13px] text-text-2">Entrega en 24 a 48 horas</div>
                 </div>
                 <strong className={envio === 0 ? "text-success" : ""}>{envio == null ? "—" : envio === 0 ? "Gratis" : lempiras(envio)}</strong>
@@ -359,7 +359,7 @@ export function FormularioCheckout({
                 <span>{lempiras(subtotal)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-text-2">Envío{zona ? ` · ${zona.municipio.nombre}` : ""}</span>
+                <span className="text-text-2">Envío{zona ? ` · ${zona.nombre}` : ""}</span>
                 <span className={envio === 0 ? "font-semibold text-success" : ""}>{envio == null ? "—" : envio === 0 ? "Gratis" : lempiras(envio)}</span>
               </div>
               {cupon && (

@@ -1,4 +1,5 @@
 import "server-only";
+import { lugar } from "@/lib/formato";
 import type { EstadoPedido } from "@/lib/pedidos";
 import { createClient } from "@/lib/supabase/server";
 
@@ -74,7 +75,7 @@ export async function obtenerPedido(codigo: string): Promise<DetallePedido | nul
   const { data: p } = await supabase
     .from("pedidos")
     .select(
-      "id, codigo, estado, tipo_cliente, subtotal, descuento, codigo_descuento, descuento_porcentaje, envio, total, zona_envio, contacto_nombre, contacto_correo, contacto_telefono, departamento, ciudad, colonia, direccion, referencia, comprobante_path, motivo_cancelacion, problema_pago, creado_en, pago_revision_en, confirmado_en, enviado_en, entregado_en, cancelado_en, pedido_items(id, producto_slug, producto_nombre, aroma_id, aroma_nombre, tamano, img, precio_unitario, cantidad, total), pedido_mensajes(id, texto, de_admin, creado_en)",
+      "id, codigo, estado, tipo_cliente, subtotal, descuento, codigo_descuento, descuento_porcentaje, envio, total, zona_envio, contacto_nombre, contacto_correo, contacto_telefono, departamento, municipio, ciudad, colonia, direccion, referencia, comprobante_path, motivo_cancelacion, problema_pago, creado_en, pago_revision_en, confirmado_en, enviado_en, entregado_en, cancelado_en, pedido_items(id, producto_slug, producto_nombre, aroma_id, aroma_nombre, tamano, img, precio_unitario, cantidad, total), pedido_mensajes(id, texto, de_admin, creado_en)",
     )
     .eq("codigo", codigo)
     .maybeSingle();
@@ -109,7 +110,7 @@ export async function obtenerPedido(codigo: string): Promise<DetallePedido | nul
     cantidad: items.reduce((s, i) => s + i.cantidad, 0),
     miniaturas: items.slice(0, 3).map((i) => ({ img: i.img, aroma: i.aroma })),
     contacto: { nombre: p.contacto_nombre, correo: p.contacto_correo, telefono: p.contacto_telefono },
-    direccion: [p.direccion, p.colonia, `${p.ciudad}, ${p.departamento}`, p.referencia].filter(Boolean).join(" · "),
+    direccion: [p.direccion, p.colonia, lugar(p.ciudad, p.municipio, p.departamento), p.referencia].filter(Boolean).join(" · "),
     comprobante: p.comprobante_path ? (p.comprobante_path as string).split("/").pop()!.replace(/^\d+-/, "") : null,
     motivoCancelacion: p.motivo_cancelacion,
     problemaPago: p.problema_pago ?? null,

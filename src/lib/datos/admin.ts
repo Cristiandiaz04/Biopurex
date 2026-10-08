@@ -1,4 +1,5 @@
 import "server-only";
+import { lugar } from "@/lib/formato";
 import { notFound, redirect } from "next/navigation";
 import type { EstadoPedido } from "@/lib/pedidos";
 import { createClient } from "@/lib/supabase/server";
@@ -102,7 +103,7 @@ export async function obtenerPedidoAdmin(codigo: string): Promise<DetallePedidoA
   const { data: p } = await supabase
     .from("pedidos")
     .select(
-      "id, codigo, estado, tipo_cliente, subtotal, descuento, codigo_descuento, descuento_porcentaje, envio, total, zona_envio, usuario_id, contacto_nombre, contacto_correo, contacto_telefono, departamento, ciudad, colonia, direccion, referencia, comprobante_path, metodo_pago_entrega, motivo_cancelacion, creado_en, pago_revision_en, confirmado_en, enviado_en, entregado_en, cancelado_en, pedido_items(id, producto_slug, producto_nombre, aroma_id, aroma_nombre, tamano, img, precio_unitario, cantidad, total, variantes(sku)), pedido_mensajes(id, texto, de_admin, creado_en)",
+      "id, codigo, estado, tipo_cliente, subtotal, descuento, codigo_descuento, descuento_porcentaje, envio, total, zona_envio, usuario_id, contacto_nombre, contacto_correo, contacto_telefono, departamento, municipio, ciudad, colonia, direccion, referencia, comprobante_path, metodo_pago_entrega, motivo_cancelacion, creado_en, pago_revision_en, confirmado_en, enviado_en, entregado_en, cancelado_en, pedido_items(id, producto_slug, producto_nombre, aroma_id, aroma_nombre, tamano, img, precio_unitario, cantidad, total, variantes(sku)), pedido_mensajes(id, texto, de_admin, creado_en)",
     )
     .eq("codigo", codigo)
     .maybeSingle();
@@ -136,7 +137,7 @@ export async function obtenerPedidoAdmin(codigo: string): Promise<DetallePedidoA
       limite: n(perfil?.limite_credito),
     },
     direccion: [p.direccion, p.colonia, p.referencia].filter(Boolean).join(" · "),
-    ciudad: `${p.ciudad}, ${p.departamento}`,
+    ciudad: lugar(p.ciudad, p.municipio, p.departamento),
     comprobanteUrl: firmado?.data?.signedUrl ?? null,
     comprobanteEsPdf: /\.pdf$/i.test(p.comprobante_path ?? ""),
     metodoPagoEntrega: p.metodo_pago_entrega,

@@ -6,7 +6,8 @@ import { datosDashboard } from "@/lib/datos/admin";
 import { lempiras } from "@/lib/formato";
 import { ETIQUETA_ESTADO } from "@/lib/pedidos";
 
-export const metadata = { title: "Dashboard" };
+// El template del panel aplica a las páginas hijas; esta es la raíz del panel.
+export const metadata = { title: { absolute: "Dashboard · Panel BIOPUREX" } };
 
 const VENDIDO = new Set(["confirmado", "enviado", "entregado"]);
 const diaHN = (d: Date | string) => new Date(d).toLocaleDateString("en-CA", { timeZone: "America/Tegucigalpa" });

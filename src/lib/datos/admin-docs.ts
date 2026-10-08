@@ -447,11 +447,11 @@ export async function datosReportes() {
 // Zonas de entrega (0007)
 // ---------------------------------------------------------------------------
 
-/** Todos los municipios y ciudades (también los desactivados) y el mínimo del envío gratis. */
+/** Todos los municipios (también los desactivados) y el mínimo del envío gratis. */
 export async function listarZonasAdmin(): Promise<ZonasEnvio> {
   const { supabase } = await exigirAdmin();
   const [m, c] = await Promise.all([
-    supabase.from("municipios").select("id, departamento, nombre, costo_envio, activo, ciudades(id, nombre, activo)").order("departamento").order("nombre"),
+    supabase.from("municipios").select("id, departamento, nombre, costo_envio, activo").order("departamento").order("nombre"),
     supabase.from("configuracion").select("envio_gratis_desde").single(),
   ]);
   if (m.error) throw new Error(m.error.message);
@@ -463,7 +463,6 @@ export async function listarZonasAdmin(): Promise<ZonasEnvio> {
       nombre: x.nombre,
       costo: n(x.costo_envio),
       activo: x.activo,
-      ciudades: (x.ciudades as { id: string; nombre: string; activo: boolean }[]).sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
     })),
     gratisDesde: c.data.envio_gratis_desde == null ? null : n(c.data.envio_gratis_desde),
   };

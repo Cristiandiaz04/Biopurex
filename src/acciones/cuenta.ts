@@ -31,7 +31,7 @@ export async function guardarDireccion(entrada: {
   if (Object.keys(errores).length) return { error: "Revisa los campos marcados.", errores: errores as Record<string, string> };
   if (entrada.id && !UUID.test(entrada.id)) return { error: "Dirección no válida." };
   const zona = resolverZona((await obtenerZonas()).municipios, datos.departamento, datos.municipio, datos.ciudad);
-  if (!zona) return { error: "Por ahora no entregamos en esa zona.", errores: { ciudad: "Elige municipio y ciudad de la lista" } };
+  if (!zona) return { error: "Por ahora no entregamos en esa zona.", errores: { municipio: "Elige tu municipio de la lista" } };
 
   if (entrada.predeterminada) {
     await supabase.from("direcciones").update({ predeterminada: false }).eq("usuario_id", user.id);
@@ -41,8 +41,8 @@ export async function guardarDireccion(entrada: {
     nombre: datos.nombre.trim(),
     telefono: soloDigitos(datos.telefono),
     departamento: datos.departamento,
-    municipio: zona.municipio.nombre,
-    ciudad: zona.ciudad,
+    municipio: zona.nombre,
+    ciudad: datos.ciudad.trim(),
     colonia: datos.colonia.trim(),
     direccion: datos.direccion.trim(),
     referencia: datos.referencia.trim() || null,
