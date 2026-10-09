@@ -42,7 +42,8 @@ export function FormularioCompra({
   function guardar(recibir: boolean) {
     setError(null);
     setOk(null);
-    if (recibir && !window.confirm(`¿Confirmar la compra? Se sumarán ${t.unidades} unidades al inventario y ya no se podrá editar.`)) return;
+    // Las líneas mezclan kg, lb y unidades: se cuentan líneas, no se suman cantidades.
+    if (recibir && !window.confirm(`¿Confirmar la compra? Las ${t.lineas} líneas se suman al inventario (materia prima y productos de reventa) y ya no se podrá editar.`)) return;
     iniciar(async () => {
       const r = await guardarCompra({
         id: inicial?.id,
