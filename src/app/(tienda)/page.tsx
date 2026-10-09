@@ -182,7 +182,7 @@ export default async function Inicio() {
                     {c.nombre}
                   </span>
                   <span className={`relative z-[1] text-[13px] font-semibold ${c.oscura ? "text-on-dark-2" : "text-text-2"}`}>
-                    {productos.filter((p) => p.cat === c.id).length} productos
+                    {productos.filter((p) => p.cat === c.id).reduce((s, p) => s + p.variantes.length, 0)} productos
                   </span>
                   <div className="drop-product absolute -bottom-[3%] -right-[4%] h-[72%] w-[70%]">
                     <Image src={c.img ? `/img/${c.img}.webp` : (productos.find((p) => p.cat === c.id)?.variantes[0]?.img ?? "/img/logo.png")} alt="" fill sizes="(max-width: 899px) 30vw, 200px" className="object-contain" />

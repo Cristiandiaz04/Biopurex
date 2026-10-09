@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { LayoutGrid, Package, Search, ShoppingBag, User } from "lucide-react";
+import { Package, Search, ShoppingBag, Store, User } from "lucide-react";
 import { BotonPanel } from "./boton-panel";
 import { useCarrito } from "./carrito-provider";
 import { useCatalogo } from "./catalogo-provider";
@@ -109,7 +109,7 @@ export function Encabezado() {
           </Link>
           <div className="flex-1" />
           <Link href="/catalogo" className="flex h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-navy no-underline hover:bg-surface">
-            <LayoutGrid size={18} strokeWidth={2} aria-hidden />
+            <Store size={18} strokeWidth={2} aria-hidden />
             Tienda
           </Link>
           <BotonPanel movil />
@@ -131,7 +131,7 @@ export function Encabezado() {
           <Image src="/img/logo.png" alt="BIOPUREX" width={96} height={48} priority className="h-12 w-auto" />
         </Link>
         <Link href="/catalogo" className="flex h-11 flex-none items-center gap-2 whitespace-nowrap rounded-full bg-navy px-4 text-sm font-semibold text-white no-underline hover:bg-navy-700">
-          <LayoutGrid size={18} aria-hidden />
+          <Store size={18} aria-hidden />
           Tienda
         </Link>
         <Suspense>

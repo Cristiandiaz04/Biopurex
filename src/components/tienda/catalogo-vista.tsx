@@ -81,7 +81,7 @@ export function CatalogoVista() {
   // Sin categoría, búsqueda ni filtros: la tienda abre con las categorías como tarjetas.
   const portada = !cat && !q && !aromas.length && !tamanos.length && sp.get("todos") !== "1";
   const conProductos = categorias
-    .map((c) => ({ c, n: todos.filter((p) => p.cat === c.id).length, foto: todos.find((p) => p.cat === c.id)?.variantes[0]?.img }))
+    .map((c) => ({ c, n: todos.filter((p) => p.cat === c.id).reduce((s, p) => s + p.variantes.length, 0), foto: todos.find((p) => p.cat === c.id)?.variantes[0]?.img }))
     .filter((x) => x.n > 0);
   const titulo = portada ? "Tienda" : catSel ? catSel.nombre : q ? `Resultados para “${q}”` : "Todos los productos";
 
