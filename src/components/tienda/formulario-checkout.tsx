@@ -327,7 +327,7 @@ export function FormularioCheckout({
             </section>
           </div>
 
-          <aside className={`${tarjeta} flex flex-col gap-4 min-[900px]:sticky min-[900px]:top-[140px]`}>
+          <aside className={`${tarjeta} flex flex-col gap-4 min-[900px]:sticky min-[900px]:top-[100px]`}>
             <h2 className="m-0 text-lg font-bold">Resumen del pedido</h2>
             {lineas.length === 0 && <p className="m-0 text-sm text-text-2">Tu carrito está vacío.</p>}
             <div className="flex flex-col gap-3">

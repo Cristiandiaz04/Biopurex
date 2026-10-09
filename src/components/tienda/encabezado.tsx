@@ -97,10 +97,6 @@ function BotonCarrito({ movil }: { movil?: boolean }) {
 export function Encabezado() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-bg">
-      <div className="bg-navy px-4 py-2 text-center text-xs font-medium tracking-[.02em] text-white">
-        Envíos a todo Honduras · Compra 100 % en línea
-      </div>
-
       {/* Móvil */}
       <div className="min-[900px]:hidden">
         <div className="flex items-center gap-0.5 py-1.5 pl-3 pr-2">
