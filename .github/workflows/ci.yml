@@ -15,6 +15,11 @@ jobs:
   verificar:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      # next.config necesita una URL de Supabase; sin secretos se usa una de relleno (no se conecta).
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://relleno.supabase.co' }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'relleno' }}
+      HAY_SUPABASE: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -39,8 +44,5 @@ jobs:
       # El build prerenderiza contra Supabase: necesita los secretos del repositorio
       # (Settings → Secrets → Actions). Sin ellos se salta; Vercel igual hace su build.
       - name: Build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-        if: ${{ env.NEXT_PUBLIC_SUPABASE_URL != '' }}
+        if: ${{ env.HAY_SUPABASE == 'true' }}
         run: npm run build

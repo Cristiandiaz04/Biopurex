@@ -2,7 +2,10 @@ import type { NextConfig } from "next";
 
 // Política de contenido: de dónde puede cargar la página scripts, imágenes y conexiones.
 // Supabase (datos, fotos y chat en vivo) y la barra de Vercel en los links de prueba.
-const SUPABASE = "https://dunejdzectfkwakpxnvj.supabase.co";
+// El proyecto de Supabase sale de la variable de entorno: producción y prueba usan bases distintas.
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) throw new Error("Falta NEXT_PUBLIC_SUPABASE_URL (ver .env.example)");
+const SUPABASE = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).origin;
+const SUPABASE_HOST = new URL(SUPABASE).hostname;
 const dev = process.env.NODE_ENV !== "production";
 const CSP = [
   "default-src 'self'",
@@ -11,7 +14,7 @@ const CSP = [
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: ${SUPABASE} https://vercel.live https://vercel.com`,
   "font-src 'self' data: https://vercel.live",
-  `connect-src 'self' ${SUPABASE} wss://dunejdzectfkwakpxnvj.supabase.co https://vercel.live wss://ws-us3.pusher.com`,
+  `connect-src 'self' ${SUPABASE} wss://${SUPABASE_HOST} https://vercel.live wss://ws-us3.pusher.com`,
   "frame-src https://vercel.live",
   "object-src 'none'",
   "base-uri 'self'",
@@ -25,7 +28,7 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   images: {
     // Fotos de productos subidas desde el panel (bucket público "productos" de Supabase).
-    remotePatterns: [{ protocol: "https", hostname: "dunejdzectfkwakpxnvj.supabase.co", pathname: "/storage/v1/object/public/productos/**" }],
+    remotePatterns: [{ protocol: "https", hostname: SUPABASE_HOST, pathname: "/storage/v1/object/public/productos/**" }],
   },
   partialPrefetching: true,
   poweredByHeader: false,
