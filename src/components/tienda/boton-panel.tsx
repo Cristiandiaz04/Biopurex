@@ -6,7 +6,10 @@ import { Suspense, useEffect, useState } from "react";
 import { LayoutDashboard } from "lucide-react";
 
 const CLAVE = "bpx-rol";
-const VIGENCIA = 10 * 60_000; // con la misma sesión, se vuelve a preguntar cada 10 minutos
+// Con la misma sesión: "sí es admin" se recuerda 10 minutos; "no" solo 30 segundos, para que
+// el botón aparezca enseguida si a la cuenta le acaban de dar el rol de admin.
+const VIGENCIA_SI = 10 * 60_000;
+const VIGENCIA_NO = 30_000;
 
 /**
  * Botón "Panel" del encabezado de la tienda: solo para cuentas admin.
@@ -38,7 +41,7 @@ function Boton({ movil }: { movil?: boolean }) {
     const huella = sesion.slice(-24);
     try {
       const [en, h, valor] = (sessionStorage.getItem(CLAVE) ?? "").split("|");
-      if (h === huella && Date.now() - Number(en) < VIGENCIA) {
+      if (h === huella && Date.now() - Number(en) < (valor === "1" ? VIGENCIA_SI : VIGENCIA_NO)) {
         setAdmin(valor === "1");
         return;
       }
