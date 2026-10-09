@@ -8,6 +8,10 @@ import { obtenerCategorias, obtenerProductos, obtenerZonas } from "@/lib/datos/c
 /** Tienda pública: encabezado, pie, carrito y el catálogo (cacheado) para los componentes de cliente. */
 export default async function LayoutTienda({ children }: { children: React.ReactNode }) {
   const [productos, categorias, zonas] = await Promise.all([obtenerProductos(), obtenerCategorias(), obtenerZonas()]);
+  // Al navegador va el catálogo sin descripciones, beneficios, modo de uso ni notas: el carrito,
+  // las tarjetas y el buscador no los usan, y la ficha del producto los recibe del servidor.
+  // (~70 KB menos en cada página.)
+  const liviano = productos.map((p) => ({ ...p, desc: "", beneficios: [], modoUso: [], notas: {} }));
   const costos = zonas.municipios.map((m) => m.costo);
   const envio = {
     desde: costos.length ? Math.min(...costos) : null,
@@ -15,7 +19,7 @@ export default async function LayoutTienda({ children }: { children: React.React
     zonas: [...new Set(zonas.municipios.map((m) => m.nombre))],
   };
   return (
-    <CatalogoProvider productos={productos} categorias={categorias} envio={envio}>
+    <CatalogoProvider productos={liviano} categorias={categorias} envio={envio}>
       <CarritoProvider>
         <Encabezado />
         <div className="flex flex-1 flex-col">{children}</div>

@@ -29,6 +29,8 @@ export function Pie({ categorias }: { categorias: Categoria[] }) {
         <div className="flex flex-col">
           <div className={titulo}>Mi cuenta</div>
           <Link href="/pedidos" className={enlace}>Mis pedidos</Link>
+          <Link href="/envios" className={enlace}>Envíos y pedidos</Link>
+          <Link href="/privacidad" className={enlace}>Privacidad</Link>
           <Link href="/cuenta" className={enlace}>Mi cuenta</Link>
         </div>
         <div className="flex flex-col">

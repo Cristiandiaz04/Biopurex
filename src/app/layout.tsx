@@ -2,13 +2,19 @@ import type { Metadata, Viewport } from "next";
 import { Anton, Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { SITIO } from "@/lib/sitio";
 import "./globals.css";
 
 const anton = Anton({ variable: "--font-anton", weight: "400", subsets: ["latin"], display: "swap" });
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITIO),
   title: { default: "BIOPUREX — Tu mejor aliado en la limpieza", template: "%s · BIOPUREX" },
+  applicationName: "BIOPUREX",
+  openGraph: { type: "website", locale: "es_HN", siteName: "BIOPUREX" },
+  twitter: { card: "summary_large_image" },
+  formatDetection: { telephone: false },
   description:
     "Productos de limpieza hondureños de San Pedro Sula. Desinfectantes, detergentes, jabones, aromatizantes y línea automotriz. Compra en línea con envío a todo Honduras.",
 };

@@ -6,7 +6,7 @@ import { Cargando } from "@/components/ui/cargando";
 import { obtenerConfiguracion, obtenerZonas } from "@/lib/datos/catalogo";
 import { obtenerDirecciones, obtenerPerfil } from "@/lib/datos/cuenta";
 
-export const metadata: Metadata = { title: "Finalizar compra" };
+export const metadata: Metadata = { title: "Finalizar compra", robots: { index: false, follow: false } };
 
 async function Checkout() {
   const perfil = await obtenerPerfil();

@@ -12,7 +12,7 @@ import { Insignias, type InsigniaId } from "./insignias";
  * Tarjeta de un producto en UN aroma (en el catálogo cada aroma es su propia tarjeta).
  * El aroma se cambia dentro de la ficha del producto, no aquí.
  */
-export function TarjetaProducto({ producto: p, clave }: { producto: Producto; clave?: string | null }) {
+export function TarjetaProducto({ producto: p, clave, prioridad }: { producto: Producto; clave?: string | null; prioridad?: boolean }) {
   const { agregar } = useCarrito();
   const v = varianteInicial(p, clave);
   const oscura = esOscuro(p);
@@ -41,6 +41,7 @@ export function TarjetaProducto({ producto: p, clave }: { producto: Producto; cl
             src={v.img}
             alt=""
             fill
+            priority={prioridad}
             sizes="(max-width: 899px) 45vw, 260px"
             className={`object-contain ${oscura ? "drop-product-dark" : "drop-product"}`}
           />

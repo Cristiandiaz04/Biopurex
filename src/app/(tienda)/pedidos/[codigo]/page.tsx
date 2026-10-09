@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { VistaPedidos } from "@/components/pedidos/vista-pedidos";
 import { Cargando } from "@/components/ui/cargando";
 
-export const metadata: Metadata = { title: "Mi pedido" };
+export const metadata: Metadata = { title: "Mi pedido", robots: { index: false, follow: false } };
 
 async function Detalle({ params }: { params: PageProps<"/pedidos/[codigo]">["params"] }) {
   const { codigo } = await params;

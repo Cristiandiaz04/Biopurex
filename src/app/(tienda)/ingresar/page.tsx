@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FormularioAcceso } from "@/components/cuenta/formulario-acceso";
 
-export const metadata: Metadata = { title: "Iniciar sesión" };
+export const metadata: Metadata = { title: "Iniciar sesión", robots: { index: false, follow: false } };
 
 export default function Ingresar() {
   return (

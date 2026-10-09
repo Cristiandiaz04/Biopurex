@@ -42,7 +42,7 @@ for (const archivo of readdirSync(dir).filter((x) => x.endsWith(".sql")).sort())
 }
 // Las migraciones idempotentes se pueden volver a correr (p. ej. si Supabase cortó por un bloqueo).
 // (en orden: 0007 redefine _crear_pedido de 0005)
-for (const archivo of ["0005_compras_cotizaciones_facturas.sql", "0006_materia_prima_produccion.sql", "0007_zonas_envio.sql", "0008_categorias_codigos.sql", "0009_stock_libre_problema_pago.sql", "0010_municipio_ciudad_libre.sql", "0011_inicio_editable.sql", "0012_seguridad_inicio_fijo.sql"]) {
+for (const archivo of ["0005_compras_cotizaciones_facturas.sql", "0006_materia_prima_produccion.sql", "0007_zonas_envio.sql", "0008_categorias_codigos.sql", "0009_stock_libre_problema_pago.sql", "0010_municipio_ciudad_libre.sql", "0011_inicio_editable.sql", "0012_seguridad_inicio_fijo.sql", "0013_limites_acceso_idempotencia.sql"]) {
   await run(readFileSync(dir + "/" + archivo, "utf8"));
   ok(true, archivo + " se puede volver a correr");
 }
@@ -292,6 +292,22 @@ ok(ok1.codigo === "SECRETO50", "otro cliente no queda bloqueado");
 try { await como(U2, () => q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb,false,'SECRETO50')", [items([[vLav, 1]]), contacto, dirSPS2])); ok(false, "crear_pedido con código sin validar"); } catch (e) { ok(/Aplica el código/.test(e.message), "crear_pedido no acepta códigos sin validar antes (no se pueden adivinar)"); }
 const fijas = await q("select modo from public.inicio_secciones where modo in ('estrella','categorias','aromas') order by orden");
 ok(fijas.map((x) => x.modo).join() === "estrella,categorias,aromas", "inicio: tarjetas fijas estrella, categorías y aromas");
+
+// ---- 0013: límite de accesos y pedidos idempotentes ----
+await run("set role anon;");
+const intentos = [];
+for (let k = 0; k < 6; k++) intentos.push((await q("select public.permitir_intento('huella-de-prueba-1', 5, 15) ok"))[0].ok);
+const leer = await q("select count(*)::int n from public.intentos_acceso").then(() => "leyó", () => "bloqueado");
+await run("reset role;");
+ok(intentos.slice(0, 5).every(Boolean) && intentos[5] === false, "límite de acceso: 5 intentos permitidos, el 6.º no");
+ok(leer === "bloqueado", "nadie puede leer la tabla de intentos de acceso");
+const clave = "9f6c1c52-7f7e-4f0e-9a51-0c8a1b2c3d4e";
+const contactoClave = JSON.stringify({ ...JSON.parse(contacto), clave });
+const pedirIdem = () => como(U1, async () => (await q("select public.crear_pedido($1::jsonb,$2::jsonb,$3::jsonb) c", [items([[vLav, 1]]), contactoClave, dirSPS2]))[0].c);
+const idem1 = await pedirIdem();
+const idem2 = await pedirIdem();
+ok(idem1 === idem2, `doble envío del mismo checkout = el mismo pedido (${idem1} / ${idem2})`);
+ok((await q("select count(*)::int n from public.pedidos where clave_idempotencia = $1", [clave]))[0].n === 1, "no se duplica el pedido");
 
 console.log(fallas ? `\n${fallas} FALLAS` : "\nTodo OK");
 await db.close();

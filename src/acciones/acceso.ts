@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { hayErrores, validarRegistro, type DatosCuenta, type Errores } from "@/lib/validacion";
 import { registrar } from "@/lib/log";
+import { MENSAJE_LIMITE, permitirIntento } from "@/lib/limites";
 
 export type EstadoAcceso = {
   errores?: Errores<DatosCuenta>;
@@ -38,6 +39,7 @@ export async function iniciarSesion(_: EstadoAcceso, fd: FormData): Promise<Esta
   const d = leer(fd);
   const errores = validarRegistro(d, false);
   if (hayErrores(errores)) return { errores, valores: { correo: d.correo } };
+  if (!(await permitirIntento("login", d.correo))) return { mensaje: MENSAJE_LIMITE, valores: { correo: d.correo } };
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email: d.correo, password: d.contrasena });
@@ -60,6 +62,7 @@ export async function registrarse(_: EstadoAcceso, fd: FormData): Promise<Estado
   const d = leer(fd);
   const errores = validarRegistro(d, true);
   if (hayErrores(errores)) return { errores, valores: { nombre: d.nombre, correo: d.correo } };
+  if (!(await permitirIntento("registro"))) return { mensaje: MENSAJE_LIMITE, valores: { nombre: d.nombre, correo: d.correo } };
 
   const supabase = await createClient();
   const siguiente = destinoSeguro(fd.get("siguiente"));
@@ -85,6 +88,8 @@ export async function registrarse(_: EstadoAcceso, fd: FormData): Promise<Estado
 export async function recuperarContrasena(_: EstadoAcceso, fd: FormData): Promise<EstadoAcceso> {
   const correo = String(fd.get("correo") ?? "").trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) return { errores: { correo: "Ingresa un correo válido" }, valores: { correo } };
+  // Mismo mensaje que el normal: no revela si el límite saltó por ese correo.
+  if (!(await permitirIntento("recuperar", correo))) return { ok: "Si hay una cuenta con ese correo, te llegará un enlace para crear una contraseña nueva." };
   const supabase = await createClient();
   await supabase.auth.resetPasswordForEmail(correo, {
     redirectTo: `${await origen()}/auth/confirmar?siguiente=/cuenta/contrasena`,

@@ -125,7 +125,7 @@ export function CatalogoVista() {
 
         {portada ? (
           <div className="grid grid-cols-2 gap-3 min-[900px]:grid-cols-4 min-[900px]:gap-5">
-            {conProductos.map(({ c, n, foto }) => (
+            {conProductos.map(({ c, n, foto }, i) => (
               <Link
                 key={c.id}
                 href={`/catalogo?cat=${c.id}`}
@@ -139,7 +139,7 @@ export function CatalogoVista() {
                   {n} {n === 1 ? "producto" : "productos"} <ChevronRight size={14} aria-hidden />
                 </span>
                 <div className="drop-product absolute -bottom-[3%] -right-[4%] h-[66%] w-[66%]">
-                  <Image src={c.img ? `/img/${c.img}.webp` : (foto ?? "/img/logo.png")} alt="" fill sizes="(max-width: 899px) 40vw, 240px" className="object-contain" />
+                  <Image src={c.img ? `/img/${c.img}.webp` : (foto ?? "/img/logo.png")} alt="" fill priority={i < 4} sizes="(max-width: 899px) 40vw, 240px" className="object-contain" />
                 </div>
               </Link>
             ))}
@@ -206,8 +206,8 @@ export function CatalogoVista() {
   
           {tarjetas.length > 0 ? (
             <div className="grid grid-cols-2 gap-3 min-[900px]:grid-cols-4 min-[900px]:gap-6">
-              {tarjetas.map(({ p, clave }) => (
-                <TarjetaProducto key={`${p.slug}-${clave}`} producto={p} clave={clave} />
+              {tarjetas.map(({ p, clave }, i) => (
+                <TarjetaProducto key={`${p.slug}-${clave}`} producto={p} clave={clave} prioridad={i < 4} />
               ))}
             </div>
           ) : (

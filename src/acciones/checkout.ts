@@ -17,6 +17,8 @@ export async function crearPedido(entrada: {
   datos: DatosEnvio;
   guardarDireccion: boolean;
   codigo?: string | null;
+  /** Clave única del intento de compra: un doble envío devuelve el mismo pedido (0013). */
+  clave?: string;
 }): Promise<ResultadoPedido> {
   const { items, datos, guardarDireccion } = entrada;
   const codigo = entrada.codigo?.trim().toUpperCase() || null;
@@ -39,7 +41,12 @@ export async function crearPedido(entrada: {
   // Precios, envío, stock y estado los decide la base de datos (crear_pedido).
   const { data, error } = await supabase.rpc("crear_pedido", {
     p_items: items.map((i) => ({ variante_id: i.varianteId, cantidad: i.cantidad })),
-    p_contacto: { nombre: datos.nombre.trim(), correo: datos.correo.trim(), telefono: soloDigitos(datos.telefono) },
+    p_contacto: {
+      nombre: datos.nombre.trim(),
+      correo: datos.correo.trim(),
+      telefono: soloDigitos(datos.telefono),
+      ...(entrada.clave && UUID.test(entrada.clave) ? { clave: entrada.clave } : {}),
+    },
     p_direccion: {
       departamento: datos.departamento,
       municipio: zona.nombre,

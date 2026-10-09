@@ -5,6 +5,9 @@ import { ProductoEstrella } from "@/components/tienda/inicio/producto-estrella";
 import { TarjetaProducto } from "@/components/tienda/tarjeta-producto";
 import { AROMAS, AROMA_IDS, aromaVar } from "@/lib/catalogo";
 import { obtenerCategorias, obtenerInicio, obtenerProductos } from "@/lib/datos/catalogo";
+import { datosOrganizacion, jsonLd } from "@/lib/sitio";
+
+export const metadata = { alternates: { canonical: "/" } };
 
 const BOTELLAS: [string, number, number][] = [
   ["des_cit_lt", 10, 74],
@@ -57,6 +60,7 @@ export default async function Inicio() {
   const litro = porSlug("desinfectante-litro");
   return (
     <main>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(datosOrganizacion()) }} />
       {/* Portada */}
       <section className="relative overflow-hidden bg-navy text-white">
         <div className="absolute -right-[14%] -top-[36%] aspect-square w-[72%] rounded-full bg-navy-700" />

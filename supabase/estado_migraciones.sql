@@ -54,6 +54,9 @@ from (values
     and to_regclass('public.inicio_productos') is not null),
   ('0012_seguridad_inicio_fijo',
     to_regclass('public.intentos_descuento') is not null
-    and exists (select 1 from public.inicio_secciones where modo = 'estrella'))
+    and exists (select 1 from public.inicio_secciones where modo = 'estrella')),
+  ('0013_limites_acceso_idempotencia',
+    to_regclass('public.intentos_acceso') is not null
+    and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'pedidos' and column_name = 'clave_idempotencia'))
 ) as t(migracion, corrida)
 order by migracion;

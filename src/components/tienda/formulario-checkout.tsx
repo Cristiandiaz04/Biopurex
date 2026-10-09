@@ -77,6 +77,8 @@ export function FormularioCheckout({
   const [error, setError] = useState<string | null>(null);
   const [guardar, setGuardar] = useState(direcciones.length === 0);
   const [enviando, iniciar] = useTransition();
+  // Una clave por visita al checkout: si el pedido se envía dos veces, la base devuelve el mismo.
+  const [clave] = useState(() => crypto.randomUUID());
   const [copiado, setCopiado] = useState<string | null>(null);
   const [codigoTexto, setCodigoTexto] = useState("");
   const [cupon, setCupon] = useState<{ codigo: string; porcentaje: number } | null>(null);
@@ -156,6 +158,7 @@ export function FormularioCheckout({
         datos,
         guardarDireccion: guardar && !elegida,
         codigo: cupon?.codigo ?? null,
+        clave,
       });
       if ("codigo" in r) {
         vaciar();

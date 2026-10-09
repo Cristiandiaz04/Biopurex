@@ -7,7 +7,7 @@ import { Cargando } from "@/components/ui/cargando";
 import { obtenerPerfil } from "@/lib/datos/cuenta";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Datos personales" };
+export const metadata: Metadata = { title: "Datos personales", robots: { index: false, follow: false } };
 
 async function Datos() {
   const perfil = await obtenerPerfil();

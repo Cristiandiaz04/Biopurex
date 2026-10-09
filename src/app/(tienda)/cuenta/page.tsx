@@ -7,7 +7,7 @@ import { Cargando } from "@/components/ui/cargando";
 import { obtenerZonas } from "@/lib/datos/catalogo";
 import { obtenerDirecciones, obtenerPerfil } from "@/lib/datos/cuenta";
 
-export const metadata: Metadata = { title: "Mi cuenta" };
+export const metadata: Metadata = { title: "Mi cuenta", robots: { index: false, follow: false } };
 
 async function Cuenta() {
   const perfil = await obtenerPerfil();

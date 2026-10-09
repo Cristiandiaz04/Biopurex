@@ -12,7 +12,7 @@ import { obtenerPedido } from "@/lib/datos/pedidos";
 import { lempiras } from "@/lib/formato";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Pedido creado" };
+export const metadata: Metadata = { title: "Pedido creado", robots: { index: false, follow: false } };
 
 const paso = "rounded-lg bg-bg p-[clamp(18px,3vw,24px)] shadow-1";
 const numero = (n: number, activo = true) => (

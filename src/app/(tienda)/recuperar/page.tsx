@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { FormularioRecuperar } from "@/components/cuenta/formulario-recuperar";
 
-export const metadata: Metadata = { title: "Recuperar contraseña" };
+export const metadata: Metadata = { title: "Recuperar contraseña", robots: { index: false, follow: false } };
 
 export default function Recuperar() {
   return (

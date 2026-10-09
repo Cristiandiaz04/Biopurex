@@ -6,7 +6,7 @@ import { MarcoCuenta } from "@/components/cuenta/marco-cuenta";
 import { Cargando } from "@/components/ui/cargando";
 import { obtenerPerfil } from "@/lib/datos/cuenta";
 
-export const metadata: Metadata = { title: "Contraseña" };
+export const metadata: Metadata = { title: "Contraseña", robots: { index: false, follow: false } };
 
 async function Contrasena() {
   const perfil = await obtenerPerfil();
