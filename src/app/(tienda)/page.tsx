@@ -94,7 +94,7 @@ export default async function Inicio() {
             {BOTELLAS.map(([img, w, h], i) => (
               <div
                 key={img}
-                className="drop-product-dark animate-rise-in relative flex-none"
+                className="drop-product-dark relative flex-none"
                 style={{ width: `${w}%`, height: `${h}%`, marginLeft: i ? "-2%" : 0, animationDelay: `${120 + i * 90}ms` }}
               >
                 <Image src={`/img/${img}.webp`} alt="" fill priority={i === 3} sizes="(max-width: 899px) 24vw, 160px" className="object-contain object-bottom" />

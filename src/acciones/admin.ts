@@ -4,13 +4,14 @@ import { revalidatePath, updateTag } from "next/cache";
 import { esAroma } from "@/lib/catalogo";
 import { notificarPedido, type EventoPedido } from "@/lib/correo-pedidos";
 import { exigirAdmin } from "@/lib/datos/admin";
+import { registrar, registrarError } from "@/lib/log";
 
 export type Resultado = { ok?: string; error?: string; errores?: Record<string, string>; slug?: string };
 
 const UUID = /^[0-9a-f-]{36}$/i;
 
 function fallo(contexto: string, error: { code?: string; message: string }): Resultado {
-  console.error(`[${contexto}]`, error.code, error.message);
+  registrarError(contexto, error);
   // P0001 = raise exception de nuestras funciones: mensaje escrito para el usuario.
   return { error: error.code === "P0001" ? error.message : "No se pudo completar la acción. Intenta de nuevo." };
 }
@@ -37,6 +38,7 @@ async function accionPedido(
   const { supabase } = await exigirAdmin();
   const { error } = await supabase.rpc(rpc, args);
   if (error) return fallo(rpc, error);
+  registrar(`pedido_${CORREO[rpc]}`, { codigo });
   await notificarPedido(supabase, codigo, CORREO[rpc]);
   revalidatePath(`/admin/pedidos/${codigo}`);
   revalidatePath("/admin/pedidos");

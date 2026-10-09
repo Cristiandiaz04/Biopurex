@@ -1,9 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { ChevronRight, LayoutGrid, Search, SlidersHorizontal, X } from "lucide-react";
 import {
   AROMAS,
   AROMA_IDS,
@@ -77,7 +78,12 @@ export function CatalogoVista() {
     ...tamanos.map((t) => ({ label: t, color: null, quitar: () => actualizar({ tam: tamanos.filter((x) => x !== t) }) })),
   ];
   const nFiltros = aromas.length + tamanos.length + (cat ? 1 : 0);
-  const titulo = catSel ? catSel.nombre : q ? `Resultados para “${q}”` : "Todos los productos";
+  // Sin categoría, búsqueda ni filtros: la tienda abre con las categorías como tarjetas.
+  const portada = !cat && !q && !aromas.length && !tamanos.length && sp.get("todos") !== "1";
+  const conProductos = categorias
+    .map((c) => ({ c, n: todos.filter((p) => p.cat === c.id).length, foto: todos.find((p) => p.cat === c.id)?.variantes[0]?.img }))
+    .filter((x) => x.n > 0);
+  const titulo = portada ? "Tienda" : catSel ? catSel.nombre : q ? `Resultados para “${q}”` : "Todos los productos";
 
   const th = oscuro
     ? { page: "bg-graphite text-white", fg2: "text-on-dark-2", btn: "bg-white text-graphite", chip: "bg-graphite-2 text-white", line: "border-graphite-3", surf: "bg-graphite-2" }
@@ -99,84 +105,126 @@ export function CatalogoVista() {
             Inicio
           </Link>
           <span>/</span>
-          <span className={`font-semibold ${oscuro ? "text-white" : "text-navy"}`}>{catSel ? catSel.nombre : "Todos"}</span>
+          {!portada && (
+            <>
+              <Link href="/catalogo" className="py-1.5 no-underline hover:underline">
+                Tienda
+              </Link>
+              <span>/</span>
+            </>
+          )}
+          <span className={`font-semibold ${oscuro ? "text-white" : "text-navy"}`}>{portada ? "Tienda" : catSel ? catSel.nombre : "Todos"}</span>
         </nav>
         <div className="mb-5">
           <span className="brand-line mb-3" />
           <h1 className="font-display text-h2 m-0">{titulo}</h1>
           <div className={`mt-2 text-sm ${th.fg2}`}>
-            {tarjetas.length} {tarjetas.length === 1 ? "producto" : "productos"}
+            {portada ? "Elige una categoría para ver sus productos" : `${tarjetas.length} ${tarjetas.length === 1 ? "producto" : "productos"}`}
           </div>
         </div>
 
-        <div className="mb-3 flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={() => setHojaAbierta(true)}
-            className={`flex h-11 items-center gap-2 rounded-full px-[18px] text-sm font-semibold transition-transform active:scale-[.97] ${th.btn}`}
-          >
-            <SlidersHorizontal size={16} strokeWidth={2.25} aria-hidden />
-            Filtros
-            {nFiltros > 0 && (
-              <span className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold ${oscuro ? "bg-graphite text-white" : "bg-white text-navy"}`}>
-                {nFiltros}
-              </span>
-            )}
-          </button>
-          <div className="flex-1" />
-          <select
-            value={orden}
-            onChange={(e) => actualizar({ orden: e.target.value === "rel" ? null : e.target.value })}
-            aria-label="Ordenar por"
-            className={`h-11 min-w-0 max-w-[220px] cursor-pointer rounded-full border-[1.5px] pl-4 pr-3 text-sm font-semibold ${th.line} ${oscuro ? "bg-graphite text-white" : "bg-bg text-navy"}`}
-          >
-            <option value="rel">Relevancia</option>
-            <option value="asc">Precio: menor a mayor</option>
-            <option value="desc">Precio: mayor a menor</option>
-            <option value="az">Nombre A–Z</option>
-          </select>
-        </div>
-
-        {(activos.length > 0 || q) && (
-          <div className="mb-4 flex flex-wrap gap-1.5">
-            {activos.map((c) => (
-              <button
-                key={c.label}
-                type="button"
-                onClick={c.quitar}
-                aria-label={`Quitar filtro ${c.label}`}
-                className={`flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full pl-3 pr-2.5 text-[13px] font-semibold ${th.chip}`}
+        {portada ? (
+          <div className="grid grid-cols-2 gap-3 min-[900px]:grid-cols-4 min-[900px]:gap-5">
+            {conProductos.map(({ c, n, foto }) => (
+              <Link
+                key={c.id}
+                href={`/catalogo?cat=${c.id}`}
+                className={`relative flex aspect-[1/1.05] flex-col justify-between overflow-hidden rounded-lg p-[clamp(14px,1.6vw,22px)] no-underline transition-transform duration-200 active:scale-[.98] ${
+                  c.oscura ? "bg-graphite" : c.tinte ? "" : "bg-surface"
+                }`}
+                style={c.tinte ? { background: `color-mix(in srgb, ${aromaVar(c.tinte)} 14%, var(--bg))` } : undefined}
               >
-                {c.color && <span className="size-3 rounded-full" style={{ background: c.color }} />}
-                {c.label}
-                <X size={16} strokeWidth={2.25} aria-hidden />
-              </button>
+                <span className={`font-display relative z-[1] max-w-[9ch] text-[clamp(20px,2.1vw,30px)] leading-none ${c.oscura ? "text-white" : "text-navy"}`}>{c.nombre}</span>
+                <span className={`relative z-[1] flex items-center gap-1 text-[13px] font-semibold ${c.oscura ? "text-on-dark-2" : "text-text-2"}`}>
+                  {n} {n === 1 ? "producto" : "productos"} <ChevronRight size={14} aria-hidden />
+                </span>
+                <div className="drop-product absolute -bottom-[3%] -right-[4%] h-[66%] w-[66%]">
+                  <Image src={c.img ? `/img/${c.img}.webp` : (foto ?? "/img/logo.png")} alt="" fill sizes="(max-width: 899px) 40vw, 240px" className="object-contain" />
+                </div>
+              </Link>
             ))}
-            <button type="button" onClick={limpiar} className="h-9 px-2 text-[13px] font-semibold underline underline-offset-[3px]">
-              Limpiar todo
-            </button>
-          </div>
-        )}
-
-        {tarjetas.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3 min-[900px]:grid-cols-4 min-[900px]:gap-6">
-            {tarjetas.map(({ p, clave }) => (
-              <TarjetaProducto key={`${p.slug}-${clave}`} producto={p} clave={clave} />
-            ))}
+            <Link
+              href="/catalogo?todos=1"
+              className="flex aspect-[1/1.05] flex-col items-start justify-between rounded-lg bg-navy p-[clamp(14px,1.6vw,22px)] text-white no-underline transition-transform duration-200 active:scale-[.98]"
+            >
+              <span className="font-display max-w-[9ch] text-[clamp(20px,2.1vw,30px)] leading-none">Todos los productos</span>
+              <span className="flex items-center gap-1.5 text-[13px] font-semibold text-on-navy-2">
+                <LayoutGrid size={16} aria-hidden /> Ver todo
+              </span>
+            </Link>
           </div>
         ) : (
-          <div className={`flex flex-col items-center gap-3 rounded-xl px-5 py-[clamp(40px,8vw,88px)] text-center ${th.surf}`}>
-            <span className={`flex size-[72px] items-center justify-center rounded-full ${oscuro ? "bg-graphite" : "bg-bg"}`}>
-              <Search size={28} strokeWidth={1.75} aria-hidden />
-            </span>
-            <h2 className="mb-0 mt-2 text-[22px] font-bold">No encontramos productos</h2>
-            <p className={`m-0 max-w-[36ch] leading-normal ${th.fg2}`}>
-              Prueba con otro aroma o presentación, o limpia los filtros para ver todo el catálogo.
-            </p>
-            <button type="button" onClick={limpiar} className={`mt-2 h-12 rounded-full px-6 font-semibold ${th.btn}`}>
-              Limpiar filtros
+          <>
+          <div className="mb-3 flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setHojaAbierta(true)}
+              className={`flex h-11 items-center gap-2 rounded-full px-[18px] text-sm font-semibold transition-transform active:scale-[.97] ${th.btn}`}
+            >
+              <SlidersHorizontal size={16} strokeWidth={2.25} aria-hidden />
+              Filtros
+              {nFiltros > 0 && (
+                <span className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold ${oscuro ? "bg-graphite text-white" : "bg-white text-navy"}`}>
+                  {nFiltros}
+                </span>
+              )}
             </button>
+            <div className="flex-1" />
+            <select
+              value={orden}
+              onChange={(e) => actualizar({ orden: e.target.value === "rel" ? null : e.target.value })}
+              aria-label="Ordenar por"
+              className={`h-11 min-w-0 max-w-[220px] cursor-pointer rounded-full border-[1.5px] pl-4 pr-3 text-sm font-semibold ${th.line} ${oscuro ? "bg-graphite text-white" : "bg-bg text-navy"}`}
+            >
+              <option value="rel">Relevancia</option>
+              <option value="asc">Precio: menor a mayor</option>
+              <option value="desc">Precio: mayor a menor</option>
+              <option value="az">Nombre A–Z</option>
+            </select>
           </div>
+  
+          {(activos.length > 0 || q) && (
+            <div className="mb-4 flex flex-wrap gap-1.5">
+              {activos.map((c) => (
+                <button
+                  key={c.label}
+                  type="button"
+                  onClick={c.quitar}
+                  aria-label={`Quitar filtro ${c.label}`}
+                  className={`flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full pl-3 pr-2.5 text-[13px] font-semibold ${th.chip}`}
+                >
+                  {c.color && <span className="size-3 rounded-full" style={{ background: c.color }} />}
+                  {c.label}
+                  <X size={16} strokeWidth={2.25} aria-hidden />
+                </button>
+              ))}
+              <button type="button" onClick={limpiar} className="h-9 px-2 text-[13px] font-semibold underline underline-offset-[3px]">
+                Limpiar todo
+              </button>
+            </div>
+          )}
+  
+          {tarjetas.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3 min-[900px]:grid-cols-4 min-[900px]:gap-6">
+              {tarjetas.map(({ p, clave }) => (
+                <TarjetaProducto key={`${p.slug}-${clave}`} producto={p} clave={clave} />
+              ))}
+            </div>
+          ) : (
+            <div className={`flex flex-col items-center gap-3 rounded-xl px-5 py-[clamp(40px,8vw,88px)] text-center ${th.surf}`}>
+              <span className={`flex size-[72px] items-center justify-center rounded-full ${oscuro ? "bg-graphite" : "bg-bg"}`}>
+                <Search size={28} strokeWidth={1.75} aria-hidden />
+              </span>
+              <h2 className="mb-0 mt-2 text-[22px] font-bold">No encontramos productos</h2>
+              <p className={`m-0 max-w-[36ch] leading-normal ${th.fg2}`}>
+                Prueba con otro aroma o presentación, o limpia los filtros para ver todo el catálogo.
+              </p>
+              <button type="button" onClick={limpiar} className={`mt-2 h-12 rounded-full px-6 font-semibold ${th.btn}`}>
+                Limpiar filtros
+              </button>
+            </div>
+          )}
+          </>
         )}
       </div>
 

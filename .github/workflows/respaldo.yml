@@ -1,0 +1,61 @@
+# Respaldo diario de la base de datos (el plan gratis de Supabase no incluye respaldos).
+# Necesita dos secretos del repositorio (Settings → Secrets and variables → Actions):
+#   SUPABASE_DB_URL  → Supabase → Connect → Session pooler (con la contraseña de la base)
+#   RESPALDO_CLAVE   → una contraseña larga para cifrar el respaldo (guárdala en el vault)
+# El respaldo se sube CIFRADO (AES-256) y dura 30 días: tiene datos de clientes, y los archivos
+# de un repositorio público los puede descargar cualquier usuario de GitHub.
+# Restaurar: ver "Biopurex — Recuperación ante desastres" en el vault.
+name: Respaldo de la base de datos
+
+on:
+  schedule:
+    - cron: "0 8 * * *" # 2:00 a. m. en Honduras
+  workflow_dispatch:
+
+jobs:
+  respaldo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      RESPALDO_CLAVE: ${{ secrets.RESPALDO_CLAVE }}
+    steps:
+      - name: ¿Están los secretos?
+        id: listo
+        run: |
+          if [ -n "$SUPABASE_DB_URL" ] && [ -n "$RESPALDO_CLAVE" ]; then
+            echo "si=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Faltan los secretos SUPABASE_DB_URL y/o RESPALDO_CLAVE: no se hizo el respaldo."
+          fi
+
+      - name: Cliente de PostgreSQL 17
+        if: steps.listo.outputs.si == 'true'
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
+
+      - name: Respaldo cifrado (esquema public + usuarios y archivos)
+        if: steps.listo.outputs.si == 'true'
+        run: |
+          fecha=$(date -u +%Y-%m-%d)
+          pg=/usr/lib/postgresql/17/bin
+          $pg/pg_dump "$SUPABASE_DB_URL" --no-owner --no-privileges --schema=public \
+            --format=custom --file="biopurex-public-$fecha.dump"
+          $pg/pg_dump "$SUPABASE_DB_URL" --data-only --no-owner \
+            --table=auth.users --table=auth.identities --table=storage.objects \
+            --format=custom --file="biopurex-auth-storage-$fecha.dump"
+          for f in *.dump; do
+            gpg --batch --yes --symmetric --cipher-algo AES256 --passphrase "$RESPALDO_CLAVE" --output "$f.gpg" "$f"
+            rm "$f"
+          done
+          ls -lh *.gpg
+
+      - uses: actions/upload-artifact@v4
+        if: steps.listo.outputs.si == 'true'
+        with:
+          name: respaldo-${{ github.run_id }}
+          path: "*.dump.gpg"
+          retention-days: 30

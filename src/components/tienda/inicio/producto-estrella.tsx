@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { AROMAS, aromaVar, type AromaId, type Producto } from "@/lib/catalogo";
+import { lempiras } from "@/lib/formato";
 
 const img = (p: Producto, a: AromaId) => (p.variantes.find((x) => x.aroma === a) ?? p.variantes[0]).img;
 
@@ -15,6 +16,9 @@ export function ProductoEstrella({ galon: GALON, litro: LITRO }: { galon: Produc
   const pausado = useRef(false);
 
   const total = AROMAS_DZ.length;
+  // Precio real más bajo entre las dos presentaciones (sin precio si ambas son por cotización).
+  const precios = [GALON, LITRO].filter((p) => !p.cotizar && p.precio != null).map((p) => p.precio as number);
+  const desde = precios.length ? Math.min(...precios) : null;
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || total < 2) return;
     const t = setInterval(() => {
@@ -74,10 +78,7 @@ export function ProductoEstrella({ galon: GALON, litro: LITRO }: { galon: Produc
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-2xl font-bold">Desde L. 35.00</span>
-            <span className="rounded-full bg-bg px-2.5 py-1 text-xs font-semibold text-text-2 shadow-[inset_0_0_0_1px_var(--border)]">
-              Precio de ejemplo
-            </span>
+            {desde != null && <span className="text-2xl font-bold">Desde {lempiras(desde)}</span>}
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
@@ -96,7 +97,7 @@ export function ProductoEstrella({ galon: GALON, litro: LITRO }: { galon: Produc
         </div>
         <div className="relative order-1 h-[clamp(300px,42vw,540px)] min-[900px]:order-2">
           <div className="bg-aroma-circle absolute left-1/2 top-[52%] aspect-square w-[min(88%,480px)] -translate-x-1/2 -translate-y-1/2 rounded-full transition-[background-color] duration-[450ms]" />
-          <div key={aroma} className="animate-fade-in absolute inset-0 flex items-end justify-center">
+          <div key={aroma} className="absolute inset-0 flex items-end justify-center">
             <div className="drop-product relative h-[90%] w-[46%]">
               <Image src={img(GALON, aroma)} alt={`Desinfectante Multiusos galón aroma ${AROMAS[aroma]}`} fill sizes="(max-width: 899px) 46vw, 300px" className="object-contain object-bottom" />
             </div>

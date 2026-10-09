@@ -4,12 +4,13 @@ import { revalidatePath, updateTag } from "next/cache";
 import { exigirAdmin } from "@/lib/datos/admin";
 import { notificarPedido } from "@/lib/correo-pedidos";
 import type { Resultado } from "./admin";
+import { registrarError } from "@/lib/log";
 
 const UUID = /^[0-9a-f-]{36}$/i;
 const soloDigitos = (s: string) => s.replace(/\D/g, "");
 
 function fallo(contexto: string, error: { code?: string; message: string }): Resultado {
-  console.error(`[${contexto}]`, error.code, error.message);
+  registrarError(contexto, error);
   return { error: error.code === "P0001" ? error.message : "No se pudo completar la acción. Intenta de nuevo." };
 }
 

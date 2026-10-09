@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { Package, Search, ShoppingBag, User } from "lucide-react";
+import { LayoutGrid, Package, Search, ShoppingBag, User } from "lucide-react";
 import { BotonPanel } from "./boton-panel";
 import { useCarrito } from "./carrito-provider";
 import { useCatalogo } from "./catalogo-provider";
@@ -108,6 +108,10 @@ export function Encabezado() {
             <Image src="/img/logo.png" alt="BIOPUREX" width={76} height={38} priority className="h-[38px] w-auto" />
           </Link>
           <div className="flex-1" />
+          <Link href="/catalogo" className="flex h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-navy no-underline hover:bg-surface">
+            <LayoutGrid size={18} strokeWidth={2} aria-hidden />
+            Tienda
+          </Link>
           <BotonPanel movil />
           <Link href="/cuenta" aria-label="Mi cuenta" className="flex size-11 items-center justify-center rounded-full text-navy hover:bg-surface">
             <User size={20} strokeWidth={2} aria-hidden />
@@ -125,6 +129,10 @@ export function Encabezado() {
       <div className="mx-auto hidden h-[76px] max-w-[1280px] items-center gap-7 px-[clamp(16px,3vw,40px)] min-[900px]:flex">
         <Link href="/" aria-label="BIOPUREX, ir al inicio" className="flex h-14 flex-none items-center rounded-sm">
           <Image src="/img/logo.png" alt="BIOPUREX" width={96} height={48} priority className="h-12 w-auto" />
+        </Link>
+        <Link href="/catalogo" className="flex h-11 flex-none items-center gap-2 whitespace-nowrap rounded-full bg-navy px-4 text-sm font-semibold text-white no-underline hover:bg-navy-700">
+          <LayoutGrid size={18} aria-hidden />
+          Tienda
         </Link>
         <Suspense>
           <NavCategorias />

@@ -5,6 +5,7 @@ import { obtenerZonas } from "@/lib/datos/catalogo";
 import { resolverZona } from "@/lib/envio";
 import { createClient } from "@/lib/supabase/server";
 import { soloDigitos, validarEnvio, type DatosEnvio, type Errores, problemaContrasena } from "@/lib/validacion";
+import { registrarError } from "@/lib/log";
 
 export type ResultadoForm = { ok?: string; error?: string; errores?: Record<string, string> };
 
@@ -52,7 +53,7 @@ export async function guardarDireccion(entrada: {
     ? await supabase.from("direcciones").update(fila).eq("id", entrada.id)
     : await supabase.from("direcciones").insert(fila);
   if (error) {
-    console.error("[guardarDireccion]", error.message);
+    registrarError("guardarDireccion", error);
     return { error: "No pudimos guardar la dirección." };
   }
   revalidatePath("/cuenta");

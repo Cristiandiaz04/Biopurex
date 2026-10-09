@@ -53,7 +53,7 @@ export function Pie({ categorias }: { categorias: Categoria[] }) {
       </div>
       <div className="mx-auto flex max-w-[1280px] flex-wrap justify-between gap-2 border-t border-line px-[clamp(16px,3vw,40px)] pb-7 pt-4 text-xs text-text-2">
         <span>© 2026 BIOPUREX · Tu mejor aliado en la limpieza</span>
-        <span>Precios mostrados son de ejemplo</span>
+        <span>Precios en lempiras, ISV incluido</span>
       </div>
     </footer>
   );

@@ -6,6 +6,7 @@ import { notificarPedido } from "@/lib/correo-pedidos";
 import { resolverZona } from "@/lib/envio";
 import { createClient } from "@/lib/supabase/server";
 import { hayErrores, soloDigitos, validarEnvio, type DatosEnvio, type Errores } from "@/lib/validacion";
+import { registrar, registrarError } from "@/lib/log";
 
 export type ResultadoPedido = { codigo: string } | { error: string; errores?: Errores<DatosEnvio> };
 
@@ -55,10 +56,11 @@ export async function crearPedido(entrada: {
   if (error) {
     // Los mensajes de crear_pedido ya están escritos para el cliente (raise exception '...').
     const conocido = error.code === "P0001";
-    console.error("[crearPedido]", error.code, error.message);
+    registrarError("crearPedido", error);
     return { error: conocido ? error.message : "No pudimos crear tu pedido. Intenta de nuevo en un momento." };
   }
 
+  registrar("pedido_creado", { codigo: data as string, lineas: items.length, con_codigo: !!codigo });
   await notificarPedido(supabase, data as string, "creado");
   updateTag("catalogo");
   return { codigo: data as string };

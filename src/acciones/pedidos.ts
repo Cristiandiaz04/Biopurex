@@ -3,15 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { notificarPedido } from "@/lib/correo-pedidos";
 import { createClient } from "@/lib/supabase/server";
+import { registrar, registrarError } from "@/lib/log";
 
 /** Marca el pedido como "Pago en revisión" después de subir el comprobante al bucket. */
 export async function registrarComprobante(pedidoId: string, path: string, codigo: string) {
   const supabase = await createClient();
   const { error } = await supabase.rpc("registrar_comprobante", { p_pedido: pedidoId, p_path: path });
   if (error) {
-    console.error("[registrarComprobante]", error.code, error.message);
+    registrarError("registrarComprobante", error);
     return { error: error.code === "P0001" ? error.message : "No pudimos registrar tu comprobante. Intenta de nuevo." };
   }
+  registrar("comprobante_subido", { codigo });
   await notificarPedido(supabase, codigo, "en_revision");
   revalidatePath(`/pedidos/${codigo}`);
   return { ok: true as const };

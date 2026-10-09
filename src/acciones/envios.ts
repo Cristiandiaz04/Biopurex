@@ -4,6 +4,7 @@ import { updateTag } from "next/cache";
 import { exigirAdmin } from "@/lib/datos/admin";
 import { DEPARTAMENTOS } from "@/lib/validacion";
 import type { Resultado } from "./admin";
+import { registrarError } from "@/lib/log";
 
 const UUID = /^[0-9a-f-]{36}$/i;
 const nombreValido = (s: string) => s.trim().length >= 2 && s.trim().length <= 80;
@@ -18,7 +19,7 @@ function monto(s: string): number | null | "error" {
 
 function errorBd(e: { code?: string; message: string }, duplicado: string): Resultado {
   if (e.code === "23505") return { error: duplicado };
-  console.error("[envios]", e.code, e.message);
+  registrarError("envios", e);
   return { error: "No se pudo guardar. Intenta de nuevo." };
 }
 

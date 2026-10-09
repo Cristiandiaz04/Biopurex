@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { obtenerConfiguracion } from "@/lib/datos/catalogo";
 import { lempiras } from "@/lib/formato";
 import { enviarCorreo } from "./correo";
+import { registrar } from "@/lib/log";
 
 /** Momentos del pedido que le llegan al cliente por correo. */
 export type EventoPedido = "creado" | "en_revision" | "problema_pago" | "confirmado" | "enviado" | "entregado" | "cancelado";
@@ -159,6 +160,6 @@ export async function notificarPedido(supabase: SupabaseClient, codigo: string, 
     const texto = [c.titulo, ...c.parrafos.map((x) => x.replace(/<br>/g, "\n").replace(/<[^>]+>/g, "")), `Total: ${lempiras(Number(p.total))}`, enlace].join("\n\n");
     after(() => enviarCorreo({ para: p.contacto_correo, asunto: c.asunto, html: html(c.titulo, c.parrafos, p, c.boton, enlace), texto }));
   } catch (e) {
-    console.error("[notificarPedido]", evento, codigo, e instanceof Error ? e.message : e);
+    registrar("correo_no_preparado", { evento, codigo, mensaje: e instanceof Error ? e.message.slice(0, 200) : "?" }, "error");
   }
 }

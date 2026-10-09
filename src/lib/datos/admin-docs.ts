@@ -1,6 +1,7 @@
 import "server-only";
 import type { EstadoPedido } from "@/lib/pedidos";
 import { exigirAdmin, listarInventario, type TipoCliente } from "./admin";
+import { todasLasFilas } from "./paginar";
 import { listarMaterias } from "./produccion";
 import type { ZonasEnvio } from "@/lib/envio";
 
@@ -139,7 +140,8 @@ export async function listarCompras(): Promise<FilaCompra[]> {
   const { data, error } = await supabase
     .from("compras")
     .select("id, codigo, proveedor_id, factura_proveedor, fecha, estado, proveedores(nombre), compra_items(cantidad, total)")
-    .order("numero", { ascending: false });
+    .order("numero", { ascending: false })
+    .limit(1000); // las 1000 más recientes
   if (error) throw new Error(error.message);
   return (data ?? []).map((c) => aCompra(c as unknown as Record<string, unknown>));
 }
@@ -235,7 +237,8 @@ export async function listarCotizaciones(): Promise<FilaCotizacion[]> {
   const { data, error } = await supabase
     .from("cotizaciones")
     .select("id, codigo, cliente_id, creado_en, valida_hasta, estado, total, perfiles(nombre, correo), pedidos(codigo)")
-    .order("numero", { ascending: false });
+    .order("numero", { ascending: false })
+    .limit(1000); // las 1000 más recientes
   if (error) throw new Error(error.message);
   const hoy = hoyHN();
   return (data ?? []).map((q) => aCotizacion(q as unknown as Record<string, unknown>, hoy));
@@ -408,17 +411,20 @@ export async function configuracionAdmin() {
 export async function datosReportes() {
   const { supabase } = await exigirAdmin(); // primero la sesión: la hora solo se lee al pedir la página
   const desde = `${new Date().getFullYear() - 1}-01-01T00:00:00Z`;
-  const [{ data: pedidos, error }, inventario] = await Promise.all([
-    supabase
-      .from("pedidos")
-      .select("id, codigo, estado, total, creado_en, confirmado_en, tipo_cliente, usuario_id, contacto_nombre, pedido_items(producto_nombre, producto_slug, aroma_id, aroma_nombre, tamano, img, cantidad, total)")
-      .in("estado", ["confirmado", "enviado", "entregado"])
-      .gte("creado_en", desde)
-      .order("creado_en")
-      .limit(10000),
+  // Por páginas: con más de 1000 pedidos Supabase cortaría y el reporte saldría incompleto.
+  const [pedidos, inventario] = await Promise.all([
+    todasLasFilas((a, b) =>
+      supabase
+        .from("pedidos")
+        .select("id, codigo, estado, total, creado_en, confirmado_en, tipo_cliente, usuario_id, contacto_nombre, pedido_items(producto_nombre, producto_slug, aroma_id, aroma_nombre, tamano, img, cantidad, total)")
+        .in("estado", ["confirmado", "enviado", "entregado"])
+        .gte("creado_en", desde)
+        .order("creado_en")
+        .order("id")
+        .range(a, b),
+    ),
     listarInventario(),
   ]);
-  if (error) throw new Error(error.message);
   return {
     ahora: Date.now(),
     pedidos: (pedidos ?? []).map((p) => ({

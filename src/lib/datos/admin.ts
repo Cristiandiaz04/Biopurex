@@ -5,6 +5,7 @@ import type { EstadoPedido } from "@/lib/pedidos";
 import { createClient } from "@/lib/supabase/server";
 import type { Categoria } from "@/lib/catalogo";
 import { aCategoria } from "./catalogo";
+import { todasLasFilas } from "./paginar";
 
 const n = (x: unknown) => Number(x ?? 0);
 
@@ -308,15 +309,22 @@ export async function kardex(varianteIds: string[]): Promise<Movimiento[]> {
 export async function datosDashboard() {
   const { supabase } = await exigirAdmin();
   const desde = new Date(Date.now() - 30 * 864e5).toISOString();
-  const [{ data: pedidos }, { data: items }, inventario, { data: credito }] = await Promise.all([
-    supabase.from("pedidos").select("id, codigo, estado, contacto_nombre, total, creado_en, confirmado_en").gte("creado_en", desde).order("creado_en", { ascending: false }),
-    supabase
-      .from("pedido_items")
-      .select("producto_nombre, aroma_id, aroma_nombre, tamano, img, cantidad, total, pedidos!inner(estado, creado_en)")
-      .gte("pedidos.creado_en", desde)
-      .in("pedidos.estado", ["confirmado", "enviado", "entregado"]),
+  // Todo por páginas: con más de 1000 filas Supabase cortaría y los totales saldrían mal.
+  const [pedidos, items, inventario, credito] = await Promise.all([
+    todasLasFilas((a, b) =>
+      supabase.from("pedidos").select("id, codigo, estado, contacto_nombre, total, creado_en, confirmado_en").gte("creado_en", desde).order("creado_en", { ascending: false }).order("id").range(a, b),
+    ),
+    todasLasFilas((a, b) =>
+      supabase
+        .from("pedido_items")
+        .select("id, producto_nombre, aroma_id, aroma_nombre, tamano, img, cantidad, total, pedidos!inner(estado, creado_en)")
+        .gte("pedidos.creado_en", desde)
+        .in("pedidos.estado", ["confirmado", "enviado", "entregado"])
+        .order("id")
+        .range(a, b),
+    ),
     listarInventario(),
-    supabase.from("perfiles").select("saldo").gt("saldo", 0),
+    todasLasFilas((a, b) => supabase.from("perfiles").select("id, saldo").gt("saldo", 0).order("id").range(a, b)),
   ]);
   return {
     ahora: Date.now(),
@@ -367,21 +375,21 @@ type PedidoCorto = { usuario_id: string; codigo: string; estado: EstadoPedido; t
 
 async function pedidosDeClientes(ids?: string[]) {
   const { supabase } = await exigirAdmin();
-  let q = supabase.from("pedidos").select("usuario_id, codigo, estado, tipo_cliente, total, creado_en, ciudad, departamento").order("creado_en", { ascending: false }).limit(5000);
-  if (ids) q = q.in("usuario_id", ids);
-  const { data, error } = await q;
-  if (error) throw new Error(error.message);
-  return (data ?? []) as PedidoCorto[];
+  const filas = await todasLasFilas((a, b) => {
+    let q = supabase.from("pedidos").select("usuario_id, codigo, estado, tipo_cliente, total, creado_en, ciudad, departamento").order("creado_en", { ascending: false }).order("id");
+    if (ids) q = q.in("usuario_id", ids);
+    return q.range(a, b);
+  });
+  return filas as PedidoCorto[];
 }
 
 export async function listarClientes(): Promise<FilaCliente[]> {
   const { supabase } = await exigirAdmin();
-  const [{ data: perfiles, error }, pedidos] = await Promise.all([
-    supabase.from("perfiles").select("id, nombre, correo, telefono, rtn, tipo_cliente, limite_credito, saldo, creado_en").eq("rol", "cliente").order("creado_en", { ascending: false }),
+  const [perfiles, pedidos] = await Promise.all([
+    todasLasFilas((a, b) => supabase.from("perfiles").select("id, nombre, correo, telefono, rtn, tipo_cliente, limite_credito, saldo, creado_en").eq("rol", "cliente").order("creado_en", { ascending: false }).order("id").range(a, b)),
     pedidosDeClientes(),
   ]);
-  if (error) throw new Error(error.message);
-  return (perfiles ?? []).map((c) => {
+  return perfiles.map((c) => {
     const suyos = pedidos.filter((p) => p.usuario_id === c.id);
     const validos = suyos.filter((p) => p.estado !== "cancelado");
     return {

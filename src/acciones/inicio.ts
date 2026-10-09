@@ -3,6 +3,7 @@
 import { revalidatePath, updateTag } from "next/cache";
 import { exigirAdmin } from "@/lib/datos/admin";
 import type { Resultado } from "./admin";
+import { registrarError } from "@/lib/log";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MODOS = ["manual", "mas_vendidos", "nuevos"];
@@ -123,6 +124,6 @@ export async function moverSeccion(id: string, direccion: "arriba" | "abajo"): P
 }
 
 function fallo(error: { code?: string; message: string }): Resultado {
-  console.error("[inicio]", error.code, error.message);
+  registrarError("inicio", error);
   return { error: "No se pudo guardar. Intenta de nuevo." };
 }

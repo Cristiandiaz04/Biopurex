@@ -116,7 +116,7 @@ export function FichaProducto({
                     : oscuro ? "var(--graphite-3)" : "var(--border)",
                 }}
               />
-              <div key={v.img} className={`animate-fade-in absolute inset-[9%] ${oscuro ? "drop-product-dark" : "drop-product"}`}>
+              <div key={v.img} className={`absolute inset-[9%] ${oscuro ? "drop-product-dark" : "drop-product"}`}>
                 <Image src={v.img} alt={`${p.nombre}${v.aroma ? ` aroma ${v.etiqueta}` : ""}`} fill priority sizes="(max-width: 899px) 90vw, 560px" className="object-contain" />
               </div>
               <div className="absolute left-4 top-4">
@@ -135,9 +135,6 @@ export function FichaProducto({
               <h1 className="font-display text-h2 m-0 leading-[1.02]">{p.nombre}</h1>
               <div className="flex flex-wrap items-center gap-3">
                 <span className="text-[28px] font-bold tabular-nums">{cotizar ? "Precio a consultar" : lempiras(p.precio)}</span>
-                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${th.fg2}`} style={{ boxShadow: `inset 0 0 0 1px ${th.sombraLinea}` }}>
-                  Precio de ejemplo
-                </span>
               </div>
               {p.desc && <p className={`m-0 max-w-[60ch] text-pretty leading-[1.6] ${th.fg2}`}>{p.desc}</p>}
             </div>
@@ -261,9 +258,6 @@ export function FichaProducto({
               <div>
                 <div className="mb-3.5 flex flex-wrap items-center gap-2.5">
                   <h2 className="m-0 text-lg font-bold">Modo de uso</h2>
-                  <span className={`rounded-full px-2 py-[3px] text-[11px] font-semibold ${th.fg2}`} style={{ boxShadow: `inset 0 0 0 1px ${th.sombraLinea}` }}>
-                    Texto de ejemplo · validar con etiqueta
-                  </span>
                 </div>
                 <ol className={`m-0 flex flex-col gap-2 pl-5 leading-normal ${th.fg2}`}>
                   {p.modoUso.map((u) => (

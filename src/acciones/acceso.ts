@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { hayErrores, validarRegistro, type DatosCuenta, type Errores } from "@/lib/validacion";
+import { registrar } from "@/lib/log";
 
 export type EstadoAcceso = {
   errores?: Errores<DatosCuenta>;
@@ -41,6 +42,8 @@ export async function iniciarSesion(_: EstadoAcceso, fd: FormData): Promise<Esta
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email: d.correo, password: d.contrasena });
   if (error) {
+    // Sin el correo en el log (dato personal): solo el motivo.
+    registrar("login_fallido", { motivo: /confirm/i.test(error.message) ? "sin_confirmar" : "credenciales" }, "aviso");
     const msg = /confirm/i.test(error.message)
       ? "Confirma tu correo antes de entrar. Revisa tu bandeja de entrada."
       : "Correo o contraseña incorrectos";

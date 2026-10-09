@@ -2,6 +2,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { esAroma, type AromaId, type Categoria, type Insignia, type Producto } from "@/lib/catalogo";
 import { clientePublico } from "@/lib/supabase/publico";
 import { zonasActivas, type Municipio, type ZonasEnvio } from "@/lib/envio";
+import { registrar } from "@/lib/log";
 
 type FilaVariante = {
   id: string;
@@ -162,7 +163,7 @@ export async function obtenerZonas(): Promise<ZonasEnvio> {
   ]);
   // Sin la migración 0007 la tienda sigue abierta, pero sin zonas no se puede confirmar un pedido.
   if (m.error || c.error) {
-    console.error("[obtenerZonas]", m.error?.message ?? c.error?.message);
+    registrar("error", { contexto: "obtenerZonas", mensaje: m.error?.message ?? c.error?.message }, "error");
     return { municipios: [], gratisDesde: null };
   }
   const municipios: Municipio[] = m.data.map((x) => ({
@@ -224,7 +225,7 @@ export async function obtenerInicio(): Promise<SeccionInicio[]> {
     .order("orden");
 
   if (error) {
-    console.error("[obtenerInicio]", error.message);
+    registrar("error", { contexto: "obtenerInicio", mensaje: error.message }, "error");
     return [...FIJAS_ANTERIOR, ...INICIO_ANTERIOR.map((s, i) => ({
       id: `anterior-${i}`,
       tipo: "productos" as const,

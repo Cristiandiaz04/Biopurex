@@ -1,0 +1,46 @@
+# Verificación automática en cada push a staging/main y en cada pull request.
+# Si algo falla, GitHub lo marca en rojo antes de que el cambio llegue a producción.
+name: CI
+
+on:
+  push:
+    branches: [staging, main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # El lockfile se generó en Windows: falta el binario de Linux de rolldown (lo usa vitest).
+      - run: npm install --no-save @rolldown/binding-linux-x64-gnu@1.2.13
+      - name: Tipos de rutas
+        run: npx next typegen
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Lint
+        run: npm run lint
+      - name: Pruebas de la lógica
+        run: npm test
+      - name: Pruebas de la base de datos (migraciones, RLS, pedidos, stock…)
+        run: npm run test:bd
+      - name: Constantes de cliente usadas en el servidor
+        run: npm run revisar
+      # El build prerenderiza contra Supabase: necesita los secretos del repositorio
+      # (Settings → Secrets → Actions). Sin ellos se salta; Vercel igual hace su build.
+      - name: Build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        if: ${{ env.NEXT_PUBLIC_SUPABASE_URL != '' }}
+        run: npm run build

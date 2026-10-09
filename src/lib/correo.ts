@@ -1,5 +1,6 @@
 import "server-only";
 import nodemailer, { type Transporter } from "nodemailer";
+import { registrar } from "@/lib/log";
 
 /*
  * Envío de correos por SMTP (Gmail con contraseña de aplicación, o el SMTP de cualquier
@@ -30,7 +31,7 @@ function obtenerTransporte() {
 export async function enviarCorreo(c: { para: string; asunto: string; html: string; texto: string }) {
   const t = obtenerTransporte();
   if (!t) {
-    console.warn("[correo] SMTP sin configurar; no se envió:", c.asunto);
+    registrar("correo_sin_configurar", { asunto: c.asunto }, "aviso");
     return;
   }
   try {
@@ -41,8 +42,9 @@ export async function enviarCorreo(c: { para: string; asunto: string; html: stri
       html: c.html,
       text: c.texto,
     });
+    registrar("correo_enviado", { asunto: c.asunto });
   } catch (e) {
     // Un correo que falla nunca debe romper el pedido.
-    console.error("[correo] no se pudo enviar:", c.asunto, e instanceof Error ? e.message : e);
+    registrar("correo_fallo", { asunto: c.asunto, mensaje: e instanceof Error ? e.message.slice(0, 200) : "?" }, "error");
   }
 }

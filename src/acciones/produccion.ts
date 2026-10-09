@@ -3,12 +3,13 @@
 import { revalidatePath, updateTag } from "next/cache";
 import { exigirAdmin } from "@/lib/datos/admin";
 import type { Resultado } from "./admin";
+import { registrar, registrarError } from "@/lib/log";
 
 const UUID = /^[0-9a-f-]{36}$/i;
 const UNIDADES = ["kg", "g", "lb", "L", "ml", "gal", "unidad"];
 
 function fallo(contexto: string, error: { code?: string; message: string }): Resultado {
-  console.error(`[${contexto}]`, error.code, error.message);
+  registrarError(contexto, error);
   if (error.code === "23505") return { error: "Ya existe una materia prima con ese código" };
   return { error: error.code === "P0001" ? error.message : "No se pudo completar la acción. Intenta de nuevo." };
 }
@@ -131,6 +132,7 @@ export async function producir(varianteId: string, producciones: number, nota: s
     p_nota: [detalle, nota.trim()].filter(Boolean).join(" · ").slice(0, 300),
   });
   if (error) return fallo("producir", error);
+  registrar("produccion", { codigo: data as string, unidades, producciones });
   updateTag("catalogo"); // hay nuevo stock disponible en la tienda
   revalidatePath("/admin/produccion");
   revalidatePath("/admin/materia-prima");

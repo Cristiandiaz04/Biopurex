@@ -42,7 +42,7 @@ export function TarjetaProducto({ producto: p, clave }: { producto: Producto; cl
             alt=""
             fill
             sizes="(max-width: 899px) 45vw, 260px"
-            className={`animate-fade-in object-contain ${oscura ? "drop-product-dark" : "drop-product"}`}
+            className={`object-contain ${oscura ? "drop-product-dark" : "drop-product"}`}
           />
         </div>
         <div className="absolute left-2.5 top-2.5">
