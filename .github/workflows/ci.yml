@@ -21,9 +21,9 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
-      # El lockfile se generó en Windows: falta el binario de Linux de rolldown (lo usa vitest).
-      - run: npm install --no-save @rolldown/binding-linux-x64-gnu@1.2.13
+      # npm install (no npm ci): el lockfile se genera en Windows y le faltan los binarios de
+      # Linux (rolldown, lightningcss, swc); npm install los resuelve para esta máquina.
+      - run: npm install --no-audit --no-fund
       - name: Tipos de rutas
         run: npx next typegen
       - name: TypeScript
