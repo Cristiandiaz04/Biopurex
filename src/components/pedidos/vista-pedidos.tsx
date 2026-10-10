@@ -36,7 +36,7 @@ export async function VistaPedidos({ codigo }: { codigo?: string }) {
             </span>
             <h2 className="mb-0 mt-2 text-[22px] font-bold">Todavía no tienes pedidos</h2>
             <p className="m-0 max-w-[36ch] leading-normal text-text-2">Cuando compres, aquí vas a ver el estado de tu pedido y podrás escribirnos.</p>
-            <Link href="/catalogo" className="mt-2 flex h-12 items-center rounded-full bg-navy px-6 font-semibold text-white no-underline">
+            <Link href="/catalogo" className="mt-2 flex h-12 items-center rounded-full bg-navy px-6 font-semibold text-white no-underline btn-fx">
               Ver productos
             </Link>
           </div>

@@ -20,7 +20,7 @@ export function FormularioRecuperar() {
         <form action={accion} noValidate className="flex flex-col gap-5">
           <p className="m-0 text-text-2">Escribe el correo de tu cuenta y te enviamos un enlace para crear una contraseña nueva.</p>
           <Campo label="Correo electrónico" name="correo" type="email" autoComplete="email" defaultValue={est.valores?.correo} error={est.errores?.correo} />
-          <button type="submit" disabled={cargando} className="h-[52px] rounded-full bg-navy font-semibold text-white hover:bg-navy-700 disabled:opacity-60">
+          <button type="submit" disabled={cargando} className="h-[52px] rounded-full bg-navy font-semibold text-white hover:bg-navy-700 disabled:opacity-60 btn-fx">
             {cargando ? "Enviando…" : "Enviar enlace"}
           </button>
         </form>

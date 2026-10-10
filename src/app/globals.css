@@ -68,6 +68,11 @@
   --focus: var(--navy);
   /* Color del aroma activo; cada componente lo redefine en línea. */
   --aroma: transparent;
+
+  /* Movimiento */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 @theme inline {
@@ -191,7 +196,227 @@
   }
 }
 
-/* Sin animaciones de entrada: los clientes usan celulares de gama media/baja (regla de Cristian). */
+@layer components {
+  /*
+   * Animaciones (pedido de Cristian, 2026-10-10). Solo CSS y solo transform/opacity/clip-path,
+   * que corre la GPU: fluido en celulares de gama media. Todo se apaga con "reducir movimiento".
+   */
+
+  /* Botones: en hover se elevan, les cruza un brillo y se hunden al tocarlos. */
+  .btn-fx {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    transition:
+      translate 0.25s var(--ease-out),
+      scale 0.25s var(--ease-out),
+      box-shadow 0.25s var(--ease-out),
+      background-color 0.2s;
+  }
+  .btn-fx::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(110deg, transparent 30%, color-mix(in srgb, currentColor 22%, transparent) 50%, transparent 70%);
+    translate: -120% 0;
+    transition: translate 0.7s var(--ease-out);
+  }
+  @media (hover: hover) {
+    .btn-fx:not(:disabled):hover {
+      translate: 0 -2px;
+      box-shadow: 0 12px 24px -10px rgb(20 29 69 / 0.55);
+    }
+    .btn-fx:not(:disabled):hover::after {
+      translate: 120% 0;
+    }
+  }
+  .btn-fx:not(:disabled):active {
+    translate: 0 0;
+    scale: 0.96;
+    transition-duration: 0.1s;
+  }
+
+  /* Tarjetas (categorías y productos): zoom suave de la tarjeta y un poco más de la foto. */
+  .card-zoom {
+    transition:
+      scale 0.4s var(--ease-out),
+      box-shadow 0.4s var(--ease-out),
+      background-color 0.5s;
+  }
+  .card-zoom .card-zoom-img {
+    transition:
+      scale 0.5s var(--ease-out),
+      translate 0.5s var(--ease-out);
+  }
+  @media (hover: hover) {
+    .card-zoom:hover {
+      z-index: 1;
+      scale: 1.035;
+      box-shadow: var(--sh-2);
+    }
+    .card-zoom:hover .card-zoom-img {
+      scale: 1.08;
+      translate: 0 -3%;
+    }
+  }
+  .card-zoom:active {
+    scale: 0.98;
+    transition-duration: 0.12s;
+  }
+
+  /* Entrada al hacer scroll: las tarjetas suben escalonadas por columna (scroll-driven, sin JS). */
+  @keyframes entrar {
+    from {
+      opacity: 0;
+      transform: translateY(48px) scale(0.94);
+      animation-timing-function: var(--ease-out);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .entrar-hijos > * {
+        animation: entrar linear both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 75%;
+      }
+      .entrar-hijos > :nth-child(4n + 2) {
+        animation-range: entry 8% entry 83%;
+      }
+      .entrar-hijos > :nth-child(4n + 3) {
+        animation-range: entry 16% entry 91%;
+      }
+      .entrar-hijos > :nth-child(4n + 4) {
+        animation-range: entry 24% entry 99%;
+      }
+    }
+  }
+
+  /* Ficha de producto: cambio de aroma. El color nuevo se expande en círculo desde el aroma tocado
+     (View Transitions; sin soporte, el fondo hace fundido como antes). */
+  html[data-transicion="aroma"] * {
+    transition: none !important;
+  }
+  html[data-transicion="aroma"]::view-transition-old(root) {
+    animation: none;
+  }
+  html[data-transicion="aroma"]::view-transition-new(root) {
+    animation: revelar-aroma 0.95s var(--ease-in-out) both;
+  }
+  @keyframes revelar-aroma {
+    from {
+      clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 50%));
+    }
+    to {
+      clip-path: circle(var(--vt-r, 150%) at var(--vt-x, 50%) var(--vt-y, 50%));
+    }
+  }
+
+  /* La botella nueva cae con rebote. */
+  @keyframes botella-entra {
+    0% {
+      opacity: 0;
+      transform: translateY(22%) scale(0.78) rotate(-10deg);
+    }
+    55% {
+      opacity: 1;
+      transform: translateY(-4%) scale(1.05) rotate(3deg);
+    }
+    78% {
+      transform: translateY(1%) scale(0.99) rotate(-1deg);
+    }
+    100% {
+      transform: none;
+    }
+  }
+  .aroma-botella {
+    animation: botella-entra 0.9s var(--ease-out) both;
+  }
+
+  /* El círculo de fondo late (solo scale: ya se centra con translate de Tailwind). */
+  @keyframes circulo-late {
+    0% {
+      scale: 0.55;
+    }
+    60% {
+      scale: 1.08;
+    }
+    100% {
+      scale: 1;
+    }
+  }
+  .aroma-circulo {
+    animation: circulo-late 0.85s var(--ease-out) both;
+  }
+
+  /* Onda que se expande desde la botella. */
+  @keyframes onda {
+    from {
+      opacity: 0.7;
+      transform: translate(-50%, -50%) scale(0.3);
+    }
+    to {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1.6);
+    }
+  }
+  .aroma-onda {
+    animation: onda 1s var(--ease-out) both;
+  }
+
+  /* Gotas del color nuevo que salpican hacia afuera. */
+  @keyframes gota {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.2);
+    }
+    15% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.6);
+    }
+  }
+  .aroma-gota {
+    animation: gota 0.9s var(--ease-out) both;
+  }
+
+  /* Muestra elegida: pequeño salto. Nombre del aroma: sube al cambiar. */
+  @keyframes pop {
+    0% {
+      scale: 0.7;
+    }
+    60% {
+      scale: 1.18;
+    }
+    100% {
+      scale: 1;
+    }
+  }
+  .aroma-pop {
+    animation: pop 0.45s var(--ease-spring) both;
+  }
+  @keyframes subir {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .aroma-texto {
+    display: inline-block;
+    animation: subir 0.4s var(--ease-out) both;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *,

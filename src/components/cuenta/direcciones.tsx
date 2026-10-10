@@ -105,7 +105,7 @@ export function Direcciones({ direcciones, nombre, municipios }: { direcciones: 
           </label>
           {error && <MensajeError>{error}</MensajeError>}
           <div className="flex flex-wrap gap-2.5">
-            <button type="button" onClick={guardar} disabled={pendiente} className="h-12 rounded-full bg-navy px-6 font-semibold text-white disabled:opacity-60">
+            <button type="button" onClick={guardar} disabled={pendiente} className="h-12 rounded-full bg-navy px-6 font-semibold text-white disabled:opacity-60 btn-fx">
               {pendiente ? "Guardando…" : "Guardar dirección"}
             </button>
             <button type="button" onClick={() => setForm(null)} className="h-12 rounded-full px-5 font-semibold shadow-[inset_0_0_0_1.5px_var(--navy)]">

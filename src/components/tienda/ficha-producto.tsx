@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import { AlertTriangle, Check, Minus, Package, Plus, ShoppingBag, Truck } from "lucide-react";
 import {
   AVISO_SEGURIDAD,
@@ -21,6 +22,14 @@ import { TarjetaProducto } from "./tarjeta-producto";
 const COTIZAR = (p: Producto) =>
   `mailto:mibiopurex@gmail.com?subject=${encodeURIComponent("Cotización: " + p.nombre)}`;
 
+/** Gotas que salpican al cambiar de aroma: ángulo (grados), distancia y tamaño en % del ancho de la foto. */
+const GOTAS = Array.from({ length: 12 }, (_, i) => {
+  const angulo = i * 30 + (i % 2 ? 12 : -6);
+  const distancia = 36 + ((i * 7) % 4) * 5;
+  const rad = (angulo * Math.PI) / 180;
+  return { dx: Math.cos(rad) * distancia, dy: Math.sin(rad) * distancia * 0.9, tam: 4 + ((i * 5) % 3) * 1.6, retraso: (i % 4) * 35 };
+});
+
 /**
  * Ficha de producto. Indicación de Cristian (2026-10-08): el fondo de TODA la página toma el
  * color del aroma elegido (Lavanda → fondo lavanda) y cambia con un fundido.
@@ -38,14 +47,47 @@ export function FichaProducto({
   const { porSlug, envio } = useCatalogo();
   const [clave, setClave] = useState(() => varianteInicial(p, claveInicial).clave);
   const [cantidad, setCantidad] = useState(1);
+  // Cuántas veces se cambió de aroma: las animaciones solo corren tras un cambio (no al cargar, para no retrasar la foto).
+  const [cambios, setCambios] = useState(0);
+  // Fotos de los otros aromas: se cargan cuando la página ya está quieta, para que al cambiar la botella aparezca al instante.
+  const [precargar, setPrecargar] = useState(false);
+  useEffect(() => {
+    if (p.variantes.length < 2) return;
+    const t = setTimeout(() => setPrecargar(true), 1500);
+    return () => clearTimeout(t);
+  }, [p.variantes.length]);
   const v = p.variantes.find((x) => x.clave === clave) ?? p.variantes[0];
   const oscuro = esOscuro(p);
   const tinte = v.aroma ?? p.tinte;
   const conAromas = p.variantes.length > 1;
   const cotizar = p.precio == null || p.cotizar;
 
-  function elegir(nueva: string) {
-    setClave(nueva);
+  /**
+   * Cambio de aroma (pedido de Cristian: "una animación espectacular"). El color nuevo se expande
+   * en círculo desde la muestra tocada y cubre toda la página (View Transitions); dentro, la
+   * botella cae con rebote y salpican gotas. Sin soporte o con "reducir movimiento": cambio directo.
+   */
+  function elegir(nueva: string, origen?: HTMLElement) {
+    if (nueva === clave) return;
+    const aplicar = () => {
+      setClave(nueva);
+      setCambios((c) => c + 1);
+    };
+    const raiz = document.documentElement;
+    const quieto = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!origen || quieto || !("startViewTransition" in document)) {
+      aplicar();
+    } else {
+      const r = origen.getBoundingClientRect();
+      const x = r.left + r.width / 2;
+      const y = r.top + r.height / 2;
+      raiz.style.setProperty("--vt-x", `${x}px`);
+      raiz.style.setProperty("--vt-y", `${y}px`);
+      raiz.style.setProperty("--vt-r", `${Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y))}px`);
+      raiz.setAttribute("data-transicion", "aroma");
+      const t = document.startViewTransition(() => flushSync(aplicar));
+      t.finished.finally(() => raiz.removeAttribute("data-transicion"));
+    }
     // Mantiene el aroma en la URL (compartible) sin recargar la página.
     const url = new URL(window.location.href);
     url.searchParams.set("aroma", nueva);
@@ -101,7 +143,7 @@ export function FichaProducto({
           {/* Foto */}
           <div className="flex flex-col gap-3 min-[900px]:sticky min-[900px]:top-[120px]">
             <div
-              className="relative aspect-square overflow-hidden rounded-xl transition-[background-color] duration-[450ms]"
+              className="relative aspect-square overflow-hidden rounded-xl transition-[background-color] duration-[450ms] [container-type:inline-size]"
               style={{
                 backgroundColor: tinte
                   ? `color-mix(in srgb, var(--aroma) ${oscuro ? 22 : 20}%, ${oscuro ? "var(--graphite-2)" : "var(--bg)"})`
@@ -109,14 +151,45 @@ export function FichaProducto({
               }}
             >
               <div
-                className="absolute left-1/2 top-[54%] aspect-square w-[72%] -translate-x-1/2 -translate-y-1/2 rounded-full transition-[background-color] duration-[450ms]"
+                key={cambios ? `circulo-${clave}` : "circulo"}
+                className={`absolute left-1/2 top-[54%] aspect-square w-[72%] -translate-x-1/2 -translate-y-1/2 rounded-full transition-[background-color] duration-[450ms] ${cambios ? "aroma-circulo" : ""}`}
                 style={{
                   backgroundColor: tinte
                     ? `color-mix(in srgb, var(--aroma) ${oscuro ? 36 : 32}%, ${oscuro ? "var(--graphite-2)" : "var(--bg)"})`
                     : oscuro ? "var(--graphite-3)" : "var(--border)",
                 }}
               />
-              <div key={v.img} className={`absolute inset-[9%] ${oscuro ? "drop-product-dark" : "drop-product"}`}>
+              {cambios > 0 && (
+                <div key={`efecto-${clave}`} aria-hidden className="pointer-events-none absolute inset-0">
+                  <span className="aroma-onda absolute left-1/2 top-[54%] aspect-square w-[62%] rounded-full shadow-[inset_0_0_0_3px_var(--aroma)]" />
+                  {GOTAS.map((g, i) => (
+                    <span
+                      key={i}
+                      className="aroma-gota absolute left-1/2 top-[54%] aspect-square rounded-full"
+                      style={
+                        {
+                          width: `${g.tam}cqi`,
+                          "--dx": `${g.dx}cqi`,
+                          "--dy": `${g.dy}cqi`,
+                          animationDelay: `${g.retraso}ms`,
+                          background: "radial-gradient(circle at 32% 30%, color-mix(in srgb, var(--aroma) 45%, white) 0 20%, color-mix(in srgb, var(--aroma) 82%, var(--navy)) 26%)",
+                          boxShadow: "0 4px 10px -2px color-mix(in srgb, var(--aroma) 60%, transparent)",
+                        } as React.CSSProperties
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+              {precargar && (
+                <div aria-hidden className="pointer-events-none absolute inset-[9%] opacity-0">
+                  {[...new Set(p.variantes.map((x) => x.img))]
+                    .filter((src) => src !== v.img)
+                    .map((src) => (
+                      <Image key={src} src={src} alt="" fill loading="eager" sizes="(max-width: 899px) 90vw, 560px" className="object-contain" />
+                    ))}
+                </div>
+              )}
+              <div key={v.img} className={`absolute inset-[9%] ${oscuro ? "drop-product-dark" : "drop-product"} ${cambios ? "aroma-botella" : ""}`}>
                 <Image src={v.img} alt={`${p.nombre}${v.aroma ? ` aroma ${v.etiqueta}` : ""}`} fill priority sizes="(max-width: 899px) 90vw, 560px" className="object-contain" />
               </div>
               <div className="absolute left-4 top-4">
@@ -142,7 +215,10 @@ export function FichaProducto({
             {conAromas && (
               <div>
                 <div className="mb-1.5 text-sm">
-                  Aroma: <strong>{v.etiqueta}</strong>
+                  Aroma:{" "}
+                  <strong key={v.clave} className={cambios ? "aroma-texto" : ""}>
+                    {v.etiqueta}
+                  </strong>
                 </div>
                 <div role="radiogroup" aria-label="Aroma" className="-ml-1.5 flex flex-wrap gap-1">
                   {p.variantes.map((x) => {
@@ -155,11 +231,11 @@ export function FichaProducto({
                         aria-checked={sel}
                         aria-label={x.etiqueta}
                         title={x.etiqueta}
-                        onClick={() => elegir(x.clave)}
-                        className="flex size-12 items-center justify-center rounded-full"
+                        onClick={(e) => elegir(x.clave, e.currentTarget)}
+                        className="flex size-12 items-center justify-center rounded-full transition-[scale] duration-200 hover:scale-110"
                       >
                         <span
-                          className="relative size-8 overflow-hidden rounded-full transition-shadow"
+                          className={`relative size-8 overflow-hidden rounded-full transition-shadow ${sel && cambios ? "aroma-pop" : ""}`}
                           style={{
                             background: x.aroma ? aromaVar(x.aroma) : undefined,
                             boxShadow: sel ? `0 0 0 3px ${th.anillo}, 0 0 0 5px ${th.anilloSel}` : `0 0 0 1px ${oscuro ? "var(--graphite-3)" : "rgba(30,42,94,.12)"}`,
@@ -212,7 +288,7 @@ export function FichaProducto({
               <button
                 type="button"
                 onClick={accion}
-                className={`flex h-[52px] flex-1 items-center justify-center gap-2 rounded-full px-6 font-semibold transition-transform active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-45 ${th.btn}`}
+                className={`flex h-[52px] flex-1 items-center justify-center gap-2 rounded-full px-6 font-semibold btn-fx disabled:cursor-not-allowed disabled:opacity-45 ${th.btn}`}
               >
                 <ShoppingBag size={20} aria-hidden />
                 {cta}
@@ -301,7 +377,7 @@ export function FichaProducto({
         <button
           type="button"
           onClick={accion}
-          className={`flex h-[52px] min-w-0 flex-1 items-center justify-center gap-2 rounded-full px-4 text-[15px] font-semibold disabled:cursor-not-allowed disabled:opacity-45 ${th.btn}`}
+          className={`flex h-[52px] min-w-0 flex-1 items-center justify-center gap-2 rounded-full px-4 text-[15px] font-semibold btn-fx disabled:cursor-not-allowed disabled:opacity-45 ${th.btn}`}
         >
           {cta}
           {!cotizar && <span className="font-medium opacity-85">{lempiras((p.precio ?? 0) * cantidad)}</span>}

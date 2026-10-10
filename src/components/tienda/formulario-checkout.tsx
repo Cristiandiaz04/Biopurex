@@ -418,7 +418,7 @@ export function FormularioCheckout({
               type="button"
               onClick={confirmar}
               disabled={enviando || lineas.length === 0 || !zona}
-              className="flex h-[54px] items-center justify-center gap-2 rounded-full bg-navy font-semibold text-white transition-[background-color,transform] hover:bg-navy-700 active:scale-[.98] disabled:opacity-60"
+              className="flex h-[54px] items-center justify-center gap-2 rounded-full bg-navy font-semibold text-white hover:bg-navy-700 disabled:opacity-60 btn-fx"
             >
               {enviando ? "Creando tu pedido…" : "Confirmar pedido"}
             </button>

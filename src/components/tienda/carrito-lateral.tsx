@@ -70,7 +70,7 @@ export function CarritoLateral() {
             <Link
               href="/catalogo"
               onClick={cerrar}
-              className="mt-2 flex h-[52px] items-center rounded-full bg-navy px-7 font-semibold text-white no-underline hover:bg-navy-700"
+              className="mt-2 flex h-[52px] items-center rounded-full bg-navy px-7 font-semibold text-white no-underline hover:bg-navy-700 btn-fx"
             >
               Explorar productos
             </Link>
@@ -158,7 +158,7 @@ export function CarritoLateral() {
               <Link
                 href="/checkout"
                 onClick={cerrar}
-                className="mt-1 flex h-[54px] items-center justify-center gap-2 rounded-full bg-navy font-semibold text-white no-underline hover:bg-navy-700"
+                className="mt-1 flex h-[54px] items-center justify-center gap-2 rounded-full bg-navy font-semibold text-white no-underline hover:bg-navy-700 btn-fx"
               >
                 Ir a pagar <ChevronRight size={20} aria-hidden />
               </Link>

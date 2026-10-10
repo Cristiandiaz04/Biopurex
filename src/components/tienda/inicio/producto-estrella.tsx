@@ -83,13 +83,13 @@ export function ProductoEstrella({ galon: GALON, litro: LITRO }: { galon: Produc
           <div className="flex flex-wrap gap-3">
             <Link
               href={`/producto/desinfectante-galon?aroma=${aroma}`}
-              className="inline-flex h-[52px] items-center gap-2 rounded-full bg-navy px-7 font-semibold text-white no-underline transition-[background-color,transform] hover:bg-navy-700 active:scale-[.98]"
+              className="inline-flex h-[52px] items-center gap-2 rounded-full bg-navy px-7 font-semibold text-white no-underline hover:bg-navy-700 btn-fx"
             >
               Comprar ahora <ChevronRight size={20} aria-hidden />
             </Link>
             <Link
               href="/catalogo"
-              className="inline-flex h-[52px] items-center rounded-full bg-bg px-6 font-semibold text-navy no-underline shadow-[inset_0_0_0_1.5px_var(--navy)] transition-colors hover:bg-navy-50"
+              className="inline-flex h-[52px] items-center rounded-full bg-bg px-6 font-semibold text-navy no-underline shadow-[inset_0_0_0_1.5px_var(--navy)] hover:bg-navy-50 btn-fx"
             >
               Ver catálogo
             </Link>

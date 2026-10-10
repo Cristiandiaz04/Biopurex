@@ -31,11 +31,11 @@ export function TarjetaProducto({ producto: p, clave, prioridad }: { producto: P
 
   return (
     <div
-      className={`relative flex h-full flex-col rounded-lg transition-[background-color,transform,box-shadow] duration-500 hover:-translate-y-1 hover:shadow-2 ${fondo}`}
+      className={`relative flex h-full flex-col rounded-lg card-zoom ${fondo}`}
       style={{ "--aroma": tinte ? aromaVar(tinte) : undefined } as React.CSSProperties}
     >
       <Link href={href} aria-label={`Ver ${p.nombre}${conAromas ? ` ${v.etiqueta}` : ""}`} className="relative block aspect-square rounded-t-lg">
-        <div className="absolute inset-[12%_14%_6%]">
+        <div className="card-zoom-img absolute inset-[12%_14%_6%]">
           <Image
             key={v.img}
             src={v.img}

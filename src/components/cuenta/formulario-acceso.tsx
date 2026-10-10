@@ -74,7 +74,7 @@ export function FormularioAcceso() {
           <button
             type="submit"
             disabled={cargando}
-            className="h-[52px] rounded-full bg-navy text-center font-semibold text-white hover:bg-navy-700 disabled:opacity-60"
+            className="h-[52px] rounded-full bg-navy text-center font-semibold text-white hover:bg-navy-700 disabled:opacity-60 btn-fx"
           >
             {cargando ? "Un momento…" : reg ? "Crear cuenta" : "Iniciar sesión"}
           </button>

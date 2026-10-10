@@ -70,7 +70,7 @@ function Boton({ movil }: { movil?: boolean }) {
   return (
     <Link
       href="/admin"
-      className="flex h-11 items-center gap-2 whitespace-nowrap rounded-full bg-green-50 px-3.5 text-sm font-semibold text-navy no-underline shadow-[inset_0_0_0_1.5px_var(--green)] hover:bg-green/20"
+      className="flex h-11 items-center gap-2 whitespace-nowrap rounded-full bg-green-50 px-3.5 text-sm font-semibold text-navy no-underline shadow-[inset_0_0_0_1.5px_var(--green)] hover:bg-green/20 btn-fx"
     >
       <LayoutDashboard size={20} aria-hidden />
       Panel

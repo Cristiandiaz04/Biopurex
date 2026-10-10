@@ -82,13 +82,13 @@ export default async function Inicio() {
             <div className="mt-1 flex flex-wrap gap-3">
               <Link
                 href="/catalogo"
-                className="inline-flex h-[52px] items-center gap-2 whitespace-nowrap rounded-full bg-white px-7 font-semibold text-navy no-underline transition-transform active:scale-[.98]"
+                className="inline-flex h-[52px] items-center gap-2 whitespace-nowrap rounded-full bg-white px-7 font-semibold text-navy no-underline btn-fx"
               >
                 Ir a la tienda <ChevronRight size={20} aria-hidden />
               </Link>
               <a
                 href="#quienes-somos"
-                className="inline-flex h-[52px] items-center rounded-full px-6 font-semibold text-white no-underline shadow-[inset_0_0_0_1.5px_var(--white)] transition-colors hover:bg-navy-700"
+                className="inline-flex h-[52px] items-center rounded-full px-6 font-semibold text-white no-underline shadow-[inset_0_0_0_1.5px_var(--white)] btn-fx hover:bg-navy-700"
               >
                 Conócenos
               </a>
@@ -198,7 +198,7 @@ export default async function Inicio() {
       {/* Cómo trabajamos */}
       <section className={`${contenedor} py-[clamp(48px,7vw,96px)]`}>
         <Titulo className="mb-6">Cómo trabajamos</Titulo>
-        <ol className={`${grid4} m-0 list-none p-0`}>
+        <ol className={`${grid4} entrar-hijos m-0 list-none p-0`}>
           {PASOS.map((s) => (
             <li key={s.n} className="flex flex-col gap-2.5 rounded-lg p-[clamp(16px,2vw,24px)] shadow-[inset_0_0_0_1px_var(--border)]">
               <span
@@ -224,12 +224,12 @@ export default async function Inicio() {
               <Titulo>{sec.titulo}</Titulo>
               <VerTodo href="/catalogo" />
             </div>
-            <div className={grid4}>
+            <div className={`${grid4} entrar-hijos`}>
               {categorias.filter((c) => productos.some((p) => p.cat === c.id)).map((c) => (
                 <Link
                   key={c.id}
                   href={`/catalogo?cat=${c.id}`}
-                  className={`relative flex aspect-[1/1.05] flex-col justify-between overflow-hidden rounded-lg p-[clamp(14px,1.6vw,22px)] no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-2 ${
+                  className={`relative flex aspect-[1/1.05] flex-col justify-between overflow-hidden rounded-lg p-[clamp(14px,1.6vw,22px)] no-underline card-zoom ${
                     c.oscura ? "bg-graphite" : c.tinte ? "" : "bg-surface"
                   }`}
                   style={c.tinte ? { background: `color-mix(in srgb, ${aromaVar(c.tinte)} 14%, var(--bg))` } : undefined}
@@ -240,7 +240,7 @@ export default async function Inicio() {
                   <span className={`relative z-[1] text-[13px] font-semibold ${c.oscura ? "text-on-dark-2" : "text-text-2"}`}>
                     {productos.filter((p) => p.cat === c.id).reduce((s, p) => s + p.variantes.length, 0)} productos
                   </span>
-                  <div className="drop-product absolute -bottom-[3%] -right-[4%] h-[72%] w-[70%]">
+                  <div className="card-zoom-img drop-product absolute -bottom-[3%] -right-[4%] h-[72%] w-[70%]">
                     <Image src={c.img ? `/img/${c.img}.webp` : (productos.find((p) => p.cat === c.id)?.variantes[0]?.img ?? "/img/logo.png")} alt="" fill sizes="(max-width: 899px) 30vw, 200px" className="object-contain" />
                   </div>
                 </Link>
@@ -271,7 +271,7 @@ export default async function Inicio() {
           );
         const enlace = sec.categoriaId ? `/catalogo?cat=${sec.categoriaId}` : "/catalogo";
         const tarjetas = (
-          <div className={grid4}>
+          <div className={`${grid4} entrar-hijos`}>
             {sec.items.map(({ slug, clave }) => {
               const p = porSlug(slug);
               return p ? <TarjetaProducto key={`${slug}-${clave}`} producto={p} clave={clave} /> : null;
@@ -291,7 +291,7 @@ export default async function Inicio() {
                   </div>
                   <Link
                     href={enlace}
-                    className="inline-flex h-[52px] items-center gap-2 rounded-full bg-white px-6 font-semibold text-graphite no-underline transition-transform active:scale-[.98]"
+                    className="inline-flex h-[52px] items-center gap-2 rounded-full bg-white px-6 font-semibold text-graphite no-underline btn-fx"
                   >
                     {cat ? `Ver ${cat.corto.toLowerCase()}` : "Ver todo"} <ChevronRight size={20} aria-hidden />
                   </Link>
@@ -327,7 +327,7 @@ export default async function Inicio() {
             </p>
             <a
               href={`mailto:mibiopurex@gmail.com?subject=${encodeURIComponent("Solicitud de cotización para negocio")}`}
-              className="mt-2 inline-flex h-[52px] items-center gap-2 rounded-full bg-white px-6 font-semibold text-navy no-underline"
+              className="mt-2 inline-flex h-[52px] items-center gap-2 rounded-full bg-white px-6 font-semibold text-navy no-underline btn-fx"
             >
               Solicitar cotización <ChevronRight size={20} aria-hidden />
             </a>

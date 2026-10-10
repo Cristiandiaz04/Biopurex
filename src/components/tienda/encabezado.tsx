@@ -83,7 +83,7 @@ function BotonCarrito({ movil }: { movil?: boolean }) {
       type="button"
       onClick={abrir}
       aria-label={`Abrir carrito, ${cantidad} productos`}
-      className="flex h-11 items-center gap-2 rounded-full bg-navy pl-3.5 pr-[18px] text-sm font-semibold text-white hover:bg-navy-700"
+      className="flex h-11 items-center gap-2 rounded-full bg-navy pl-3.5 pr-[18px] text-sm font-semibold text-white hover:bg-navy-700 btn-fx"
     >
       <ShoppingBag size={20} strokeWidth={2} aria-hidden />
       Carrito
@@ -126,7 +126,7 @@ export function Encabezado() {
         <Link href="/" aria-label="BIOPUREX, ir al inicio" className="flex h-14 flex-none items-center rounded-sm">
           <Image src="/img/logo.png" alt="BIOPUREX" width={96} height={48} priority className="h-12 w-auto" />
         </Link>
-        <Link href="/catalogo" className="flex h-11 flex-none items-center gap-2 whitespace-nowrap rounded-full bg-navy px-4 text-sm font-semibold text-white no-underline hover:bg-navy-700">
+        <Link href="/catalogo" className="flex h-11 flex-none items-center gap-2 whitespace-nowrap rounded-full bg-navy px-4 text-sm font-semibold text-white no-underline hover:bg-navy-700 btn-fx">
           <Store size={18} aria-hidden />
           Tienda
         </Link>

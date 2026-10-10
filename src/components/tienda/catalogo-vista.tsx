@@ -129,7 +129,7 @@ export function CatalogoVista() {
               <Link
                 key={c.id}
                 href={`/catalogo?cat=${c.id}`}
-                className={`relative flex aspect-[1/1.05] flex-col justify-between overflow-hidden rounded-lg p-[clamp(14px,1.6vw,22px)] no-underline transition-transform duration-200 active:scale-[.98] ${
+                className={`relative flex aspect-[1/1.05] flex-col justify-between overflow-hidden rounded-lg p-[clamp(14px,1.6vw,22px)] no-underline card-zoom ${
                   c.oscura ? "bg-graphite" : c.tinte ? "" : "bg-surface"
                 }`}
                 style={c.tinte ? { background: `color-mix(in srgb, ${aromaVar(c.tinte)} 14%, var(--bg))` } : undefined}
@@ -138,14 +138,14 @@ export function CatalogoVista() {
                 <span className={`relative z-[1] flex items-center gap-1 text-[13px] font-semibold ${c.oscura ? "text-on-dark-2" : "text-text-2"}`}>
                   {n} {n === 1 ? "producto" : "productos"} <ChevronRight size={14} aria-hidden />
                 </span>
-                <div className="drop-product absolute -bottom-[3%] -right-[4%] h-[66%] w-[66%]">
+                <div className="card-zoom-img drop-product absolute -bottom-[3%] -right-[4%] h-[66%] w-[66%]">
                   <Image src={c.img ? `/img/${c.img}.webp` : (foto ?? "/img/logo.png")} alt="" fill priority={i < 4} sizes="(max-width: 899px) 40vw, 240px" className="object-contain" />
                 </div>
               </Link>
             ))}
             <Link
               href="/catalogo?todos=1"
-              className="flex aspect-[1/1.05] flex-col items-start justify-between rounded-lg bg-navy p-[clamp(14px,1.6vw,22px)] text-white no-underline transition-transform duration-200 active:scale-[.98]"
+              className="flex aspect-[1/1.05] flex-col items-start justify-between rounded-lg bg-navy p-[clamp(14px,1.6vw,22px)] text-white no-underline card-zoom"
             >
               <span className="font-display max-w-[9ch] text-[clamp(20px,2.1vw,30px)] leading-none">Todos los productos</span>
               <span className="flex items-center gap-1.5 text-[13px] font-semibold text-on-navy-2">
@@ -308,7 +308,7 @@ export function CatalogoVista() {
           <button type="button" onClick={limpiar} className="h-[52px] rounded-full px-5 font-semibold shadow-[inset_0_0_0_1.5px_var(--navy)]">
             Limpiar
           </button>
-          <button type="button" onClick={() => setHojaAbierta(false)} className="h-[52px] flex-1 rounded-full bg-navy text-center font-semibold text-white">
+          <button type="button" onClick={() => setHojaAbierta(false)} className="h-[52px] flex-1 rounded-full bg-navy text-center font-semibold text-white btn-fx">
             Ver {tarjetas.length} resultado{tarjetas.length === 1 ? "" : "s"}
           </button>
         </div>

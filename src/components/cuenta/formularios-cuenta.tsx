@@ -8,7 +8,7 @@ import type { Perfil } from "@/lib/datos/cuenta";
 import { formatoTelefono } from "@/lib/validacion";
 
 const tarjeta = "flex max-w-[560px] flex-col gap-4 rounded-lg bg-bg p-[clamp(18px,3vw,28px)] shadow-1";
-const boton = "h-12 self-start rounded-full bg-navy px-6 font-semibold text-white hover:bg-navy-700 disabled:opacity-60";
+const boton = "h-12 self-start rounded-full bg-navy px-6 font-semibold text-white hover:bg-navy-700 disabled:opacity-60 btn-fx";
 
 function Ok({ texto }: { texto?: string }) {
   if (!texto) return null;

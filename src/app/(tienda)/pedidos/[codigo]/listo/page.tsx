@@ -116,10 +116,10 @@ async function PedidoListo({ params }: { params: PageProps<"/pedidos/[codigo]/li
         </ol>
 
         <div className="mt-7 flex flex-wrap justify-center gap-3">
-          <Link href={`/pedidos/${p.codigo}`} className="flex h-[52px] items-center rounded-full bg-navy px-7 font-semibold text-white no-underline hover:bg-navy-700">
+          <Link href={`/pedidos/${p.codigo}`} className="flex h-[52px] items-center rounded-full bg-navy px-7 font-semibold text-white no-underline hover:bg-navy-700 btn-fx">
             Ver mi pedido
           </Link>
-          <Link href="/" className="flex h-[52px] items-center rounded-full bg-bg px-6 font-semibold text-navy no-underline shadow-[inset_0_0_0_1.5px_var(--navy)] hover:bg-navy-50">
+          <Link href="/" className="flex h-[52px] items-center rounded-full bg-bg px-6 font-semibold text-navy no-underline shadow-[inset_0_0_0_1.5px_var(--navy)] hover:bg-navy-50 btn-fx">
             Seguir comprando
           </Link>
         </div>
