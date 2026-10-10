@@ -114,32 +114,84 @@ export default async function Inicio() {
       </section>
 
       {/* Quiénes somos */}
-      <section
-        id="quienes-somos"
-        className={`${contenedor} grid scroll-mt-28 grid-cols-1 items-start gap-[clamp(28px,4vw,64px)] pt-[clamp(48px,7vw,96px)] min-[900px]:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]`}
-      >
-        <div className="flex flex-col gap-4">
-          <span className="brand-line" />
-          <h2 className="font-display text-h2 m-0">Quiénes somos</h2>
-          <p className="m-0 max-w-[52ch] text-pretty text-[17px] leading-[1.65]">
-            Somos <strong>BIOPUREX</strong>, una marca hondureña de productos de limpieza de San Pedro Sula. Desarrollamos
-            desinfectantes, detergentes, jabones, aromatizantes y una línea automotriz pensados para el día a día de los
-            hogares y negocios del país.
-          </p>
-          <p className="m-0 max-w-[52ch] text-pretty leading-[1.65] text-text-2">
-            Vendemos solo en línea: sin tienda física, directo de nosotros a tu puerta.
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {VALORES.map(({ icono: Icono, titulo, texto }) => (
-            <div key={titulo} className="flex flex-col gap-2.5 rounded-lg bg-surface p-[clamp(16px,2vw,24px)]">
-              <span className="flex size-11 items-center justify-center rounded-full bg-bg text-navy shadow-1">
-                <Icono size={20} aria-hidden />
-              </span>
-              <div className="text-base font-bold leading-tight">{titulo}</div>
-              <div className="text-sm leading-normal text-text-2">{texto}</div>
+      <section id="quienes-somos" className="scroll-mt-28 bg-[linear-gradient(180deg,var(--navy-50)_0%,var(--surface)_100%)]">
+        <div
+          className={`${contenedor} grid grid-cols-1 items-center gap-[clamp(32px,5vw,80px)] pb-[clamp(40px,5vw,72px)] pt-[clamp(56px,8vw,112px)] min-[900px]:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]`}
+        >
+          <div className="flex flex-col gap-[22px]">
+            <div className="flex items-center gap-2.5">
+              <span className="h-[3px] w-8 rounded-sm bg-green" />
+              <span className="text-[13px] font-semibold uppercase tracking-[.12em] text-text-2">Quiénes somos</span>
             </div>
-          ))}
+            <h2 className="font-display m-0 text-balance text-[clamp(36px,4.6vw,64px)] leading-[.98] text-navy">
+              Limpieza hondureña,
+              <br />
+              <span className="text-green">hecha con orgullo</span>
+            </h2>
+            <p className="m-0 max-w-[50ch] text-pretty text-[clamp(16px,1.3vw,18px)] leading-[1.7] text-navy">
+              Somos <strong>BIOPUREX</strong>, una marca de San Pedro Sula. Desarrollamos desinfectantes, detergentes, jabones,
+              aromatizantes y una línea automotriz para el día a día de hogares y negocios en todo el país.
+            </p>
+            <p className="m-0 max-w-[50ch] text-pretty text-[15px] leading-[1.65] text-text-2">
+              Vendemos solo en línea: sin tienda física, directo de nosotros a tu puerta.
+            </p>
+            <div className="mt-1.5 flex flex-wrap gap-2.5">
+              {[
+                { texto: "San Pedro Sula, Honduras", color: "var(--green)" },
+                { texto: "100 % en línea", color: aromaVar("fresh") },
+              ].map((c) => (
+                <span key={c.texto} className="inline-flex h-[38px] items-center gap-2 rounded-full bg-white px-4 text-[13px] font-semibold text-navy shadow-1">
+                  <span className="size-2 rounded-full" style={{ background: c.color }} />
+                  {c.texto}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div aria-hidden className="relative aspect-[5/4] overflow-hidden rounded-xl bg-navy shadow-2">
+            <div className="absolute left-1/2 top-[58%] aspect-square w-[78%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-navy-700" />
+            <div className="absolute left-1/2 top-[58%] aspect-square w-[54%] -translate-x-1/2 -translate-y-1/2 rounded-full shadow-[inset_0_0_0_1px_rgba(255,255,255,.12)]" />
+            <div className="absolute inset-[14%_8%_0] flex items-end justify-center">
+              {(
+                [
+                  ["des_lav_lt", "h-[72%] w-[22%] -mr-[4%]"],
+                  ["des_mc_gal", "relative z-[1] h-full w-[42%]"],
+                  ["des_lim_lt", "h-[72%] w-[22%] -ml-[4%]"],
+                ] as const
+              ).map(([img, clase]) => (
+                <div key={img} className={`drop-product-dark relative flex-none ${clase}`}>
+                  <Image src={`/img/${img}.webp`} alt="" fill sizes="(max-width: 899px) 40vw, 240px" className="object-contain object-bottom" />
+                </div>
+              ))}
+            </div>
+            <div className="absolute left-5 top-5 flex items-center gap-2.5 rounded-full bg-white/10 py-2 pl-2 pr-3.5 text-[13px] font-semibold text-white">
+              <span className="flex">
+                {(["lavanda", "manzanacanela", "limon", "fresh"] as const).map((a, i) => (
+                  <span
+                    key={a}
+                    className={`size-[18px] rounded-full shadow-[0_0_0_2px_var(--navy)] ${i ? "-ml-1.5" : ""}`}
+                    style={{ background: aromaVar(a) }}
+                  />
+                ))}
+              </span>
+              Más de 15 aromas
+            </div>
+          </div>
+        </div>
+        <div className={`${contenedor} pb-[clamp(56px,8vw,112px)]`}>
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-line shadow-1 min-[900px]:grid-cols-4">
+            {VALORES.map(({ icono: Icono, titulo, texto }, i) => (
+              <div key={titulo} className="flex flex-col gap-3 bg-white p-[clamp(20px,2.4vw,32px)]">
+                <div className="flex items-center justify-between">
+                  <span className="flex size-12 items-center justify-center rounded-full bg-green-50 text-success">
+                    <Icono size={20} aria-hidden />
+                  </span>
+                  <span className="font-display text-[22px] text-line">{`0${i + 1}`}</span>
+                </div>
+                <div className="text-[17px] font-bold leading-tight text-navy">{titulo}</div>
+                <div className="text-pretty text-sm leading-[1.55] text-text-2">{texto}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
