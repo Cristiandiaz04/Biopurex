@@ -113,13 +113,13 @@ export function FichaProducto({
 
   const contador = (alto: string, ancho: string) => (
     <div className={`inline-flex flex-none items-center rounded-full ${alto}`} style={{ boxShadow: `inset 0 0 0 1.5px ${th.sombraLinea}` }}>
-      <button type="button" onClick={() => setCantidad((c) => Math.max(1, c - 1))} aria-label="Restar uno" className={`flex items-center justify-center ${alto} ${ancho}`}>
+      <button type="button" onClick={() => setCantidad((c) => Math.max(1, c - 1))} aria-label="Restar uno" className={`btn-pop flex items-center justify-center rounded-full ${alto} ${ancho}`}>
         <Minus size={16} strokeWidth={2.25} aria-hidden />
       </button>
-      <span aria-live="polite" className="min-w-7 text-center font-bold tabular-nums">
+      <span key={cantidad} aria-live="polite" className="aroma-pop min-w-7 text-center font-bold tabular-nums">
         {cantidad}
       </span>
-      <button type="button" onClick={() => setCantidad((c) => Math.min(999, c + 1))} aria-label="Sumar uno" className={`flex items-center justify-center ${alto} ${ancho}`}>
+      <button type="button" onClick={() => setCantidad((c) => Math.min(999, c + 1))} aria-label="Sumar uno" className={`btn-pop flex items-center justify-center rounded-full ${alto} ${ancho}`}>
         <Plus size={16} strokeWidth={2.25} aria-hidden />
       </button>
     </div>
@@ -266,7 +266,7 @@ export function FichaProducto({
                         href={`/producto/${h.slug}${mismoAroma ? `?aroma=${v.clave}` : ""}`}
                         aria-current={sel ? "page" : undefined}
                         scroll={false}
-                        className={`flex min-h-[60px] flex-col justify-center gap-0.5 rounded-md px-3.5 py-2.5 no-underline transition-colors ${sel ? th.btn : ""}`}
+                        className={`btn-pop chip-pop flex min-h-[60px] flex-col justify-center gap-0.5 rounded-md px-3.5 py-2.5 no-underline ${sel ? th.btn : ""}`}
                         style={sel ? undefined : { boxShadow: `inset 0 0 0 1.5px ${th.sombraLinea}` }}
                       >
                         <span className="text-[15px] font-semibold">{h.tamano}</span>
@@ -317,8 +317,8 @@ export function FichaProducto({
 
             {p.beneficios.length > 0 && (
               <div>
-                <h2 className="mb-3.5 mt-0 text-lg font-bold">Beneficios</h2>
-                <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
+                <h2 className="entrar mb-3.5 mt-0 text-lg font-bold">Beneficios</h2>
+                <ul className="entrar-texto m-0 flex list-none flex-col gap-2.5 p-0">
                   {p.beneficios.map((b) => (
                     <li key={b} className="flex items-start gap-3 leading-[1.45]">
                       <span className="flex size-6 flex-none items-center justify-center rounded-full bg-green-50 text-success">
@@ -331,7 +331,7 @@ export function FichaProducto({
               </div>
             )}
             {p.modoUso.length > 0 && (
-              <div>
+              <div className="entrar">
                 <div className="mb-3.5 flex flex-wrap items-center gap-2.5">
                   <h2 className="m-0 text-lg font-bold">Modo de uso</h2>
                 </div>
@@ -343,7 +343,7 @@ export function FichaProducto({
               </div>
             )}
             {p.seguridad && (
-              <div role="note" className="rounded-md bg-warning-50 p-[18px] text-navy shadow-[inset_0_0_0_1px_var(--warning)]">
+              <div role="note" className="entrar rounded-md bg-warning-50 p-[18px] text-navy shadow-[inset_0_0_0_1px_var(--warning)]">
                 <div className="mb-2.5 flex items-center gap-2 font-bold text-warning">
                   <AlertTriangle size={20} aria-hidden />
                   Aviso de seguridad
@@ -359,9 +359,11 @@ export function FichaProducto({
         </div>
 
         <section className="mt-[clamp(48px,7vw,96px)]">
-          <span className="brand-line mb-3" />
-          <h2 className="font-display text-h2 mb-6 mt-0">También te puede interesar</h2>
-          <div className="grid grid-cols-2 gap-3 min-[900px]:grid-cols-4 min-[900px]:gap-6">
+          <div className="entrar-texto">
+            <span className="brand-line mb-3" />
+            <h2 className="font-display text-h2 mb-6 mt-0">También te puede interesar</h2>
+          </div>
+          <div className="entrar-hijos grid grid-cols-2 gap-3 min-[900px]:grid-cols-4 min-[900px]:gap-6">
             {relacionados.map((r) => (
               <TarjetaProducto key={r.slug} producto={r} />
             ))}

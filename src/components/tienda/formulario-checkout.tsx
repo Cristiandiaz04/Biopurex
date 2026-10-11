@@ -184,7 +184,7 @@ export function FormularioCheckout({
   return (
     <main className="bg-surface">
       <div className="mx-auto max-w-[1200px] px-[clamp(16px,3vw,40px)] pb-[clamp(48px,6vw,80px)] pt-6">
-        <button type="button" onClick={abrir} className="inline-flex h-11 items-center gap-1.5 text-sm font-semibold">
+        <button type="button" onClick={abrir} className="btn-pop chip-pop inline-flex h-11 items-center gap-1.5 rounded-full text-sm font-semibold">
           <ChevronLeft size={16} strokeWidth={2.25} aria-hidden />
           Volver al carrito
         </button>
@@ -307,7 +307,7 @@ export function FormularioCheckout({
                           <button
                             type="button"
                             onClick={() => copiar(aCopiar, etq === "A nombre de" ? "Titular" : etq)}
-                            className="flex h-11 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold hover:bg-navy-50"
+                            className="btn-pop chip-pop flex h-11 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold hover:bg-navy-50"
                           >
                             {copiado === (etq === "A nombre de" ? "Titular" : etq) ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
                             Copiar
@@ -386,7 +386,7 @@ export function FormularioCheckout({
               {cupon ? (
                 <div className="flex items-center justify-between gap-2 rounded-md bg-success-50 px-3.5 py-2.5 text-sm font-semibold text-success">
                   {cupon.codigo} · {cupon.porcentaje} % aplicado
-                  <button type="button" onClick={() => { setCupon(null); setCodigoTexto(""); }} aria-label="Quitar código" className="flex size-8 items-center justify-center rounded-full hover:bg-white">
+                  <button type="button" onClick={() => { setCupon(null); setCodigoTexto(""); }} aria-label="Quitar código" className="btn-pop flex size-8 items-center justify-center rounded-full hover:bg-white">
                     <X size={16} aria-hidden />
                   </button>
                 </div>
@@ -406,7 +406,7 @@ export function FormularioCheckout({
                     maxLength={30}
                     className="h-11 min-w-0 flex-1 rounded-md border-[1.5px] border-line px-3.5 text-sm uppercase text-navy outline-none focus:border-navy"
                   />
-                  <button type="submit" disabled={validando || !codigoTexto.trim()} className="h-11 rounded-full px-4 text-sm font-semibold shadow-[inset_0_0_0_1.5px_var(--navy)] disabled:opacity-50">
+                  <button type="submit" disabled={validando || !codigoTexto.trim()} className="btn-pop chip-pop h-11 rounded-full px-4 text-sm font-semibold shadow-[inset_0_0_0_1.5px_var(--navy)] disabled:opacity-50">
                     {validando ? "…" : "Aplicar"}
                   </button>
                 </form>

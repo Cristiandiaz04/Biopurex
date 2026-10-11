@@ -11,7 +11,7 @@ const enlace = "flex min-h-10 items-center gap-2.5 text-sm no-underline hover:un
 export function Pie({ categorias }: { categorias: Categoria[] }) {
   return (
     <footer className="border-t border-line bg-surface">
-      <div className="mx-auto grid max-w-[1280px] grid-cols-2 gap-x-6 gap-y-8 px-[clamp(16px,3vw,40px)] pb-6 pt-[clamp(40px,5vw,64px)] min-[900px]:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))]">
+      <div className="entrar-texto mx-auto grid max-w-[1280px] grid-cols-2 gap-x-6 gap-y-8 px-[clamp(16px,3vw,40px)] pb-6 pt-[clamp(40px,5vw,64px)] min-[900px]:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))]">
         <div className="col-span-full flex flex-col items-start gap-3 min-[900px]:col-span-1">
           <Image src="/img/logo.png" alt="BIOPUREX" width={104} height={52} className="h-[52px] w-auto" />
           <p className="m-0 max-w-[34ch] text-sm leading-[1.55] text-text-2">

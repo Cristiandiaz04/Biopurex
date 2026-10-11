@@ -266,6 +266,36 @@
     transition-duration: 0.12s;
   }
 
+  /* Botones de ícono, chips y contadores: el mismo salto con resorte que las muestras de aroma.
+     Crecen en hover, se hunden al tocar y "saltan" al quedar seleccionados. */
+  .btn-pop {
+    transition:
+      scale 0.35s var(--ease-spring),
+      background-color 0.2s,
+      color 0.2s,
+      box-shadow 0.2s;
+  }
+  @media (hover: hover) {
+    .btn-pop:not(:disabled):hover {
+      scale: 1.1;
+    }
+    .chip-pop:not(:disabled):hover {
+      scale: 1.05;
+    }
+  }
+  .btn-pop:not(:disabled):active {
+    scale: 0.86;
+    transition-duration: 0.08s;
+  }
+  .chip-pop:not(:disabled):active {
+    scale: 0.94;
+  }
+  /* Sin "fill": al terminar el salto, el hover vuelve a mandar sobre scale. */
+  .btn-pop[aria-pressed="true"],
+  .btn-pop[aria-current="page"] {
+    animation: pop 0.45s var(--ease-spring);
+  }
+
   /* Entrada al hacer scroll: las tarjetas suben escalonadas por columna (scroll-driven, sin JS). */
   @keyframes entrar {
     from {
@@ -294,6 +324,94 @@
       .entrar-hijos > :nth-child(4n + 4) {
         animation-range: entry 24% entry 99%;
       }
+
+      /* Textos: suben y aparecen al llegar a ellos. .entrar = un bloque; .entrar-texto = sus hijos
+         en cascada (rayita, título, párrafo, botones). .entrar-lado = llega desde la derecha. */
+      .entrar,
+      .entrar-texto > * {
+        animation: entrar-texto linear both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 100%;
+      }
+      .entrar-texto > :nth-child(2) {
+        animation-range: entry 10% entry 100%;
+      }
+      .entrar-texto > :nth-child(3) {
+        animation-range: entry 20% entry 100%;
+      }
+      .entrar-texto > :nth-child(4) {
+        animation-range: entry 30% entry 100%;
+      }
+      .entrar-texto > :nth-child(n + 5) {
+        animation-range: entry 40% entry 100%;
+      }
+      .entrar-lado {
+        animation: entrar-lado linear both;
+        animation-timeline: view();
+        animation-range: entry 0% cover 35%;
+      }
+      /* La rayita verde de los títulos se dibuja de izquierda a derecha. */
+      .entrar-texto > .brand-line,
+      .entrar-texto .brand-line {
+        transform-origin: left;
+        animation: trazo linear both;
+        animation-timeline: view();
+        animation-range: entry 20% entry 100%;
+      }
+    }
+  }
+  @keyframes entrar-texto {
+    from {
+      opacity: 0;
+      transform: translateY(28px);
+      animation-timing-function: var(--ease-out);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  /* En celular sube (de costado desbordaría la pantalla); desde 900px llega desde la derecha. */
+  @media (min-width: 900px) {
+    .entrar-lado {
+      --lado-x: 48px;
+      --lado-y: 0px;
+    }
+  }
+  @keyframes entrar-lado {
+    from {
+      opacity: 0;
+      transform: translate(var(--lado-x, 0px), var(--lado-y, 32px)) scale(0.96);
+      animation-timing-function: var(--ease-out);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes trazo {
+    from {
+      transform: scaleX(0);
+      animation-timing-function: var(--ease-out);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  /* Portada: ya está en pantalla al abrir, así que entra al cargar (no con el scroll). */
+  @media (prefers-reduced-motion: no-preference) {
+    .aparecer > * {
+      animation: entrar-texto 0.8s var(--ease-out) both;
+    }
+    .aparecer > :nth-child(2) {
+      animation-delay: 0.08s;
+    }
+    .aparecer > :nth-child(3) {
+      animation-delay: 0.16s;
+    }
+    .aparecer > :nth-child(n + 4) {
+      animation-delay: 0.24s;
     }
   }
 

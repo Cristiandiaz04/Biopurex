@@ -74,7 +74,7 @@ export function TarjetaProducto({ producto: p, clave, prioridad }: { producto: P
           type="button"
           onClick={() => agregar(p.slug, v.clave, 1)}
           aria-label={`Agregar ${p.nombre}${v.aroma ? ` ${AROMAS[v.aroma]}` : ""} al carrito`}
-          className={`absolute bottom-3 right-2.5 flex size-11 items-center justify-center rounded-full transition-transform hover:scale-[1.06] active:scale-[.94] ${
+          className={`absolute bottom-3 right-2.5 flex size-11 items-center justify-center rounded-full btn-pop ${
             oscura ? "bg-white text-graphite" : "bg-navy text-white"
           }`}
         >

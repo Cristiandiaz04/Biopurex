@@ -44,7 +44,7 @@ function Buscador({ movil }: { movil?: boolean }) {
       className={
         movil
           ? "flex h-11 items-center gap-2 rounded-full border border-line bg-surface px-4 text-text-2"
-          : "ml-auto flex h-11 max-w-[400px] flex-1 items-center gap-2 rounded-full border border-line bg-surface px-4 text-text-2"
+          : "ml-auto flex h-11 min-w-0 max-w-[400px] flex-1 items-center gap-2 rounded-full border border-line bg-surface px-4 text-text-2"
       }
     >
       <Search size={20} strokeWidth={2} aria-hidden />
@@ -68,11 +68,11 @@ function BotonCarrito({ movil }: { movil?: boolean }) {
         type="button"
         onClick={abrir}
         aria-label={`Abrir carrito, ${cantidad} productos`}
-        className="relative flex size-11 items-center justify-center rounded-full text-navy hover:bg-surface"
+        className="btn-pop relative flex size-11 items-center justify-center rounded-full text-navy hover:bg-surface"
       >
         <ShoppingBag size={20} strokeWidth={2} aria-hidden />
         {cantidad > 0 && (
-          <span className="absolute right-0.5 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-navy px-[5px] text-[11px] font-bold text-white shadow-[0_0_0_2px_var(--bg)]">
+          <span key={cantidad} className="aroma-pop absolute right-0.5 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-navy px-[5px] text-[11px] font-bold text-white shadow-[0_0_0_2px_var(--bg)]">
             {cantidad}
           </span>
         )}
@@ -87,7 +87,7 @@ function BotonCarrito({ movil }: { movil?: boolean }) {
     >
       <ShoppingBag size={20} strokeWidth={2} aria-hidden />
       Carrito
-      <span className="flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-white px-1.5 text-xs font-bold text-navy">
+      <span key={cantidad} className="aroma-pop flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-white px-1.5 text-xs font-bold text-navy">
         {cantidad}
       </span>
     </button>
@@ -109,7 +109,7 @@ export function Encabezado() {
             Tienda
           </Link>
           <BotonPanel movil />
-          <Link href="/cuenta" aria-label="Mi cuenta" className="flex size-11 items-center justify-center rounded-full text-navy hover:bg-surface">
+          <Link href="/cuenta" aria-label="Mi cuenta" className="btn-pop flex size-11 items-center justify-center rounded-full text-navy hover:bg-surface">
             <User size={20} strokeWidth={2} aria-hidden />
           </Link>
           <BotonCarrito movil />
@@ -142,9 +142,9 @@ export function Encabezado() {
             className="flex h-11 items-center gap-2 whitespace-nowrap rounded-full px-3 text-sm font-semibold text-navy no-underline hover:bg-surface"
           >
             <Package size={20} strokeWidth={2} aria-hidden />
-            <span className="hidden min-[1180px]:inline">Mis pedidos</span>
+            <span className="hidden min-[1360px]:inline">Mis pedidos</span>
           </Link>
-          <Link href="/cuenta" aria-label="Mi cuenta" className="flex size-11 items-center justify-center rounded-full text-navy hover:bg-surface">
+          <Link href="/cuenta" aria-label="Mi cuenta" className="btn-pop flex size-11 items-center justify-center rounded-full text-navy hover:bg-surface">
             <User size={20} strokeWidth={2} aria-hidden />
           </Link>
           <BotonCarrito />

@@ -52,7 +52,7 @@ export function CarritoLateral() {
             type="button"
             onClick={cerrar}
             aria-label="Cerrar carrito"
-            className="flex size-11 items-center justify-center rounded-full hover:bg-surface"
+            className="btn-pop flex size-11 items-center justify-center rounded-full hover:bg-surface"
           >
             <X size={20} aria-hidden />
           </button>
@@ -96,7 +96,7 @@ export function CarritoLateral() {
                         type="button"
                         onClick={() => quitar(l.slug, l.clave)}
                         aria-label={`Quitar ${l.producto.nombre}`}
-                        className="-mr-2 -mt-1.5 flex size-9 items-center justify-center rounded-full text-text-2 hover:bg-surface hover:text-error"
+                        className="btn-pop -mr-2 -mt-1.5 flex size-9 items-center justify-center rounded-full text-text-2 hover:bg-surface hover:text-error"
                       >
                         <Trash2 size={16} strokeWidth={2.25} aria-hidden />
                       </button>
@@ -114,16 +114,16 @@ export function CarritoLateral() {
                           type="button"
                           onClick={() => cambiar(l.slug, l.clave, -1)}
                           aria-label="Restar uno"
-                          className="flex h-11 w-10 items-center justify-center"
+                          className="btn-pop flex h-11 w-10 items-center justify-center rounded-full"
                         >
                           <Minus size={16} strokeWidth={2.25} aria-hidden />
                         </button>
-                        <span className="min-w-[22px] text-center text-sm font-bold">{l.cantidad}</span>
+                        <span key={l.cantidad} className="aroma-pop min-w-[22px] text-center text-sm font-bold">{l.cantidad}</span>
                         <button
                           type="button"
                           onClick={() => cambiar(l.slug, l.clave, 1)}
                           aria-label="Sumar uno"
-                          className="flex h-11 w-10 items-center justify-center"
+                          className="btn-pop flex h-11 w-10 items-center justify-center rounded-full"
                         >
                           <Plus size={16} strokeWidth={2.25} aria-hidden />
                         </button>
@@ -165,7 +165,7 @@ export function CarritoLateral() {
               <button
                 type="button"
                 onClick={cerrar}
-                className="h-11 rounded-full text-center text-sm font-semibold hover:bg-bg"
+                className="btn-pop chip-pop h-11 rounded-full text-center text-sm font-semibold hover:bg-bg"
               >
                 Seguir comprando
               </button>

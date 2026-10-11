@@ -38,7 +38,7 @@ const grid4 = "grid grid-cols-2 gap-3 min-[900px]:grid-cols-4 min-[900px]:gap-6"
 
 function Titulo({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={className}>
+    <div className={`entrar-texto ${className}`}>
       <span className="brand-line mb-3" />
       <h2 className="font-display text-h2 m-0">{children}</h2>
     </div>
@@ -47,7 +47,7 @@ function Titulo({ children, className = "" }: { children: React.ReactNode; class
 
 function VerTodo({ href }: { href: string }) {
   return (
-    <Link href={href} className="flex h-11 items-center gap-1 rounded-full pl-3 pr-1 text-sm font-semibold no-underline hover:bg-surface">
+    <Link href={href} className="btn-pop chip-pop flex h-11 items-center gap-1 rounded-full pl-3 pr-1 text-sm font-semibold no-underline hover:bg-surface">
       Ver todo <ChevronRight size={16} strokeWidth={2.25} aria-hidden />
     </Link>
   );
@@ -65,7 +65,7 @@ export default async function Inicio() {
       <section className="relative overflow-hidden bg-navy text-white">
         <div className="absolute -right-[14%] -top-[36%] aspect-square w-[72%] rounded-full bg-navy-700" />
         <div className={`${contenedor} relative grid grid-cols-1 items-end gap-[clamp(8px,4vw,56px)] pt-[clamp(40px,7vw,104px)] min-[900px]:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]`}>
-          <div className="flex flex-col gap-5 pb-[clamp(8px,6vw,96px)]">
+          <div className="aparecer flex flex-col gap-5 pb-[clamp(8px,6vw,96px)]">
             <div className="flex items-center gap-2.5">
               <span className="h-[3px] w-8 rounded-sm bg-green" />
               <span className="text-[13px] font-semibold uppercase tracking-[.08em]">Hecho en San Pedro Sula, Honduras</span>
@@ -118,7 +118,7 @@ export default async function Inicio() {
         <div
           className={`${contenedor} grid grid-cols-1 items-center gap-[clamp(32px,5vw,80px)] pb-[clamp(40px,5vw,72px)] pt-[clamp(56px,8vw,112px)] min-[900px]:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]`}
         >
-          <div className="flex flex-col gap-[22px]">
+          <div className="entrar-texto flex flex-col gap-[22px]">
             <div className="flex items-center gap-2.5">
               <span className="h-[3px] w-8 rounded-sm bg-green" />
               <span className="text-[13px] font-semibold uppercase tracking-[.12em] text-text-2">Quiénes somos</span>
@@ -147,7 +147,7 @@ export default async function Inicio() {
               ))}
             </div>
           </div>
-          <div aria-hidden className="relative aspect-[5/4] overflow-hidden rounded-xl bg-navy shadow-2">
+          <div aria-hidden className="entrar-lado relative aspect-[5/4] overflow-hidden rounded-xl bg-navy shadow-2">
             <div className="absolute left-1/2 top-[58%] aspect-square w-[78%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-navy-700" />
             <div className="absolute left-1/2 top-[58%] aspect-square w-[54%] -translate-x-1/2 -translate-y-1/2 rounded-full shadow-[inset_0_0_0_1px_rgba(255,255,255,.12)]" />
             <div className="absolute inset-[14%_8%_0] flex items-end justify-center">
@@ -178,7 +178,7 @@ export default async function Inicio() {
           </div>
         </div>
         <div className={`${contenedor} pb-[clamp(56px,8vw,112px)]`}>
-          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-line shadow-1 min-[900px]:grid-cols-4">
+          <div className="entrar grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-line shadow-1 min-[900px]:grid-cols-4">
             {VALORES.map(({ icono: Icono, titulo, texto }, i) => (
               <div key={titulo} className="flex flex-col gap-3 bg-white p-[clamp(20px,2.4vw,32px)]">
                 <div className="flex items-center justify-between">
@@ -252,15 +252,15 @@ export default async function Inicio() {
           return (
           <section key={sec.id} className={`${contenedor} pt-[clamp(40px,6vw,80px)]`}>
             <Titulo className="mb-5">{sec.titulo}</Titulo>
-            <div className="no-scrollbar flex snap-x snap-mandatory gap-1 overflow-x-auto pb-2 pt-1">
+            <div className="entrar no-scrollbar flex snap-x snap-mandatory gap-1 overflow-x-auto pb-2 pt-1">
               {AROMA_IDS.map((a) => (
                 <Link
                   key={a}
                   href={`/catalogo?aroma=${a}`}
-                  className="flex w-24 flex-none snap-start flex-col items-center gap-2.5 rounded-md px-1 py-2.5 no-underline transition-colors hover:bg-surface"
+                  className="group flex w-24 flex-none snap-start flex-col items-center gap-2.5 rounded-md px-1 py-2.5 no-underline transition-colors hover:bg-surface"
                 >
                   <span
-                    className="size-16 rounded-full"
+                    className="size-16 rounded-full transition-[scale] duration-300 ease-(--ease-spring) group-hover:scale-110 group-active:scale-90"
                     style={{ background: aromaVar(a), boxShadow: `inset 0 0 0 7px color-mix(in srgb, ${aromaVar(a)} 45%, var(--white))` }}
                   />
                   <span className="text-center text-[13px] font-semibold leading-tight">{AROMAS[a]}</span>
@@ -284,14 +284,14 @@ export default async function Inicio() {
             <section key={sec.id} className="bg-graphite text-white">
               <div className={`${contenedor} py-[clamp(48px,7vw,96px)]`}>
                 <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
-                  <div className="max-w-[560px]">
+                  <div className="entrar-texto max-w-[560px]">
                     <span className="brand-line mb-3" />
                     <h2 className="font-display text-h2 mb-3 mt-0">{sec.titulo}</h2>
                     {sec.descripcion && <p className="m-0 text-pretty leading-[1.55] text-on-dark-2">{sec.descripcion}</p>}
                   </div>
                   <Link
                     href={enlace}
-                    className="inline-flex h-[52px] items-center gap-2 rounded-full bg-white px-6 font-semibold text-graphite no-underline btn-fx"
+                    className="entrar inline-flex h-[52px] items-center gap-2 rounded-full bg-white px-6 font-semibold text-graphite no-underline btn-fx"
                   >
                     {cat ? `Ver ${cat.corto.toLowerCase()}` : "Ver todo"} <ChevronRight size={20} aria-hidden />
                   </Link>
@@ -306,7 +306,7 @@ export default async function Inicio() {
             <div className="mb-6 flex items-end justify-between gap-4">
               <div className="flex flex-col gap-2">
                 <Titulo>{sec.titulo}</Titulo>
-                {sec.descripcion && <p className="m-0 max-w-[60ch] text-pretty leading-[1.55] text-text-2">{sec.descripcion}</p>}
+                {sec.descripcion && <p className="entrar m-0 max-w-[60ch] text-pretty leading-[1.55] text-text-2">{sec.descripcion}</p>}
               </div>
               <VerTodo href={enlace} />
             </div>
@@ -318,7 +318,7 @@ export default async function Inicio() {
       {/* Mayoreo */}
       <section className={`${contenedor} py-[clamp(40px,6vw,80px)]`}>
         <div className="grid grid-cols-1 overflow-hidden rounded-xl bg-navy text-white min-[900px]:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-          <div className="flex flex-col items-start gap-4 p-[clamp(28px,4vw,56px)]">
+          <div className="entrar-texto flex flex-col items-start gap-4 p-[clamp(28px,4vw,56px)]">
             <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-[.08em] text-navy">Mayoreo</span>
             <h2 className="font-display text-h2 m-0">Para negocios</h2>
             <p className="m-0 max-w-[46ch] text-pretty leading-[1.55]">
@@ -332,7 +332,7 @@ export default async function Inicio() {
               Solicitar cotización <ChevronRight size={20} aria-hidden />
             </a>
           </div>
-          <div className="relative flex min-h-[260px] items-end justify-center px-6 pt-6">
+          <div className="entrar-lado relative flex min-h-[260px] items-end justify-center px-6 pt-6">
             <div className="absolute -right-[60px] top-5 size-[340px] rounded-full bg-navy-700" />
             <Image src="/img/foam_20.webp" alt="BIOFOAM X 20 litros" width={180} height={230} className="relative h-[230px] w-auto object-contain" />
             <Image src="/img/motores_20.webp" alt="Desengrasante de motores 20 litros" width={160} height={200} className="relative -ml-7 h-[200px] w-auto object-contain" />

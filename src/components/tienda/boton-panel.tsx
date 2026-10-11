@@ -63,7 +63,7 @@ function Boton({ movil }: { movil?: boolean }) {
   if (!admin) return null;
   if (movil)
     return (
-      <Link href="/admin" aria-label="Panel de administración" className="flex size-11 items-center justify-center rounded-full bg-navy-50 text-navy">
+      <Link href="/admin" aria-label="Panel de administración" className="btn-pop flex size-11 items-center justify-center rounded-full bg-navy-50 text-navy">
         <LayoutDashboard size={20} aria-hidden />
       </Link>
     );

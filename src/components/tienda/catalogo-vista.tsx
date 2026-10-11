@@ -90,7 +90,7 @@ export function CatalogoVista() {
     : { page: "bg-bg text-navy", fg2: "text-text-2", btn: "bg-navy text-white", chip: "bg-surface text-navy", line: "border-line", surf: "bg-surface" };
 
   const chip = (sel: boolean) =>
-    `inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-4 text-sm font-semibold ${
+    `btn-pop chip-pop inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-4 text-sm font-semibold ${
       sel ? "bg-navy text-white shadow-[inset_0_0_0_1.5px_var(--navy)]" : "text-navy shadow-[inset_0_0_0_1.5px_var(--border)]"
     }`;
 
@@ -124,7 +124,7 @@ export function CatalogoVista() {
         </div>
 
         {portada ? (
-          <div className="grid grid-cols-2 gap-3 min-[900px]:grid-cols-4 min-[900px]:gap-5">
+          <div className="entrar-hijos grid grid-cols-2 gap-3 min-[900px]:grid-cols-4 min-[900px]:gap-5">
             {conProductos.map(({ c, n, foto }, i) => (
               <Link
                 key={c.id}
@@ -159,7 +159,7 @@ export function CatalogoVista() {
             <button
               type="button"
               onClick={() => setHojaAbierta(true)}
-              className={`flex h-11 items-center gap-2 rounded-full px-[18px] text-sm font-semibold transition-transform active:scale-[.97] ${th.btn}`}
+              className={`flex h-11 items-center gap-2 rounded-full px-[18px] text-sm font-semibold btn-fx ${th.btn}`}
             >
               <SlidersHorizontal size={16} strokeWidth={2.25} aria-hidden />
               Filtros
@@ -198,14 +198,14 @@ export function CatalogoVista() {
                   <X size={16} strokeWidth={2.25} aria-hidden />
                 </button>
               ))}
-              <button type="button" onClick={limpiar} className="h-9 px-2 text-[13px] font-semibold underline underline-offset-[3px]">
+              <button type="button" onClick={limpiar} className="btn-pop chip-pop h-9 rounded-full px-2 text-[13px] font-semibold underline underline-offset-[3px]">
                 Limpiar todo
               </button>
             </div>
           )}
   
           {tarjetas.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3 min-[900px]:grid-cols-4 min-[900px]:gap-6">
+            <div className="entrar-hijos grid grid-cols-2 gap-3 min-[900px]:grid-cols-4 min-[900px]:gap-6">
               {tarjetas.map(({ p, clave }, i) => (
                 <TarjetaProducto key={`${p.slug}-${clave}`} producto={p} clave={clave} prioridad={i < 4} />
               ))}
@@ -219,7 +219,7 @@ export function CatalogoVista() {
               <p className={`m-0 max-w-[36ch] leading-normal ${th.fg2}`}>
                 Prueba con otro aroma o presentación, o limpia los filtros para ver todo el catálogo.
               </p>
-              <button type="button" onClick={limpiar} className={`mt-2 h-12 rounded-full px-6 font-semibold ${th.btn}`}>
+              <button type="button" onClick={limpiar} className={`btn-fx mt-2 h-12 rounded-full px-6 font-semibold ${th.btn}`}>
                 Limpiar filtros
               </button>
             </div>
@@ -249,7 +249,7 @@ export function CatalogoVista() {
         </div>
         <div className="flex items-center justify-between pb-2 pl-6 pr-3 pt-3">
           <h2 className="font-display m-0 text-[28px] leading-none">Filtros</h2>
-          <button type="button" onClick={() => setHojaAbierta(false)} aria-label="Cerrar filtros" className="flex size-11 items-center justify-center rounded-full">
+          <button type="button" onClick={() => setHojaAbierta(false)} aria-label="Cerrar filtros" className="btn-pop flex size-11 items-center justify-center rounded-full">
             <X size={20} aria-hidden />
           </button>
         </div>
@@ -305,7 +305,7 @@ export function CatalogoVista() {
           </div>
         </div>
         <div className="flex gap-2.5 border-t border-line px-5 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3">
-          <button type="button" onClick={limpiar} className="h-[52px] rounded-full px-5 font-semibold shadow-[inset_0_0_0_1.5px_var(--navy)]">
+          <button type="button" onClick={limpiar} className="btn-pop chip-pop h-[52px] rounded-full px-5 font-semibold shadow-[inset_0_0_0_1.5px_var(--navy)]">
             Limpiar
           </button>
           <button type="button" onClick={() => setHojaAbierta(false)} className="h-[52px] flex-1 rounded-full bg-navy text-center font-semibold text-white btn-fx">
